@@ -13,13 +13,15 @@ Every new feature should follow this guide.
 Every feature should be developed in the following order:
 
 ```text
-EF Core Migration
+Entity / Domain Model
         ↓
-Entity
+EF Core Configuration / DbContext changes
+        ↓
+EF Core Migration
         ↓
 Repository
         ↓
-DTO
+DTOs
         ↓
 Mapper
         ↓
@@ -31,14 +33,45 @@ Validation
         ↓
 OpenAPI / Swagger Documentation
         ↓
-Testing
+Tests
 ```
 
 Do not skip required steps.
 
 ---
 
-# Step 1 - Create EF Core Migration
+# Step 1 - Create Entity / Domain Model
+
+Rules
+
+* One primary Entity per table where the model maps directly to a table
+* Use EF Core-compatible entity classes and relationships
+* Keep entities focused on persistence state
+* Do not place application business orchestration inside entities
+* Never expose entities directly through API controllers
+
+Example
+
+```text
+UserEntity
+CategoryEntity
+ProductEntity
+```
+
+---
+
+# Step 2 - Update EF Core Configuration / DbContext
+
+Rules
+
+* Add or update `DbSet` properties when the feature introduces new entities
+* Add or update EF Core entity configuration when relationships, indexes, constraints, conversions or defaults are required
+* Keep Entity Framework configuration consistent with the database conventions
+* Ensure configuration changes are complete before creating the migration
+
+---
+
+# Step 3 - Create EF Core Migration
 
 Every database schema change must be managed using Entity Framework Core Migrations.
 
@@ -66,27 +99,7 @@ Keep migrations in the project's configured `Migrations/` directory.
 
 ---
 
-# Step 2 - Create Entity
-
-Rules
-
-* One primary Entity per table where the model maps directly to a table
-* Use EF Core-compatible entity classes and relationships
-* Keep entities focused on persistence state
-* Do not place application business orchestration inside entities
-* Never expose entities directly through API controllers
-
-Example
-
-```text
-UserEntity
-CategoryEntity
-ProductEntity
-```
-
----
-
-# Step 3 - Create Repository
+# Step 4 - Create Repository
 
 Responsibilities
 
@@ -108,7 +121,7 @@ IProductRepository / ProductRepository
 
 ---
 
-# Step 4 - Create DTOs
+# Step 5 - Create DTOs
 
 Each module should have dedicated request and response DTOs.
 
@@ -126,7 +139,7 @@ Never expose Entity objects through the API.
 
 ---
 
-# Step 5 - Create Mapper
+# Step 6 - Create Mapper
 
 Use Mapperly for object mapping.
 
@@ -151,7 +164,7 @@ Do not manually map objects inside controllers.
 
 ---
 
-# Step 6 - Create Service
+# Step 7 - Create Service
 
 Responsibilities
 
@@ -167,7 +180,7 @@ Use an interface such as `IUserService` when this is the project convention.
 
 ---
 
-# Step 7 - Create Controller
+# Step 8 - Create Controller
 
 Responsibilities
 
@@ -182,7 +195,7 @@ Controllers must not access repositories or `DbContext` directly.
 
 ---
 
-# Step 8 - Validation
+# Step 9 - Validation
 
 Validate every incoming request.
 
@@ -200,7 +213,7 @@ Business validation belongs to the service layer.
 
 ---
 
-# Step 9 - OpenAPI / Swagger Documentation
+# Step 10 - OpenAPI / Swagger Documentation
 
 Every public endpoint should be represented in the OpenAPI document.
 
@@ -218,7 +231,7 @@ ASP.NET Core's OpenAPI support should be configured centrally.
 
 ---
 
-# Step 10 - Testing
+# Step 11 - Testing
 
 Every new feature should include tests.
 
@@ -255,8 +268,9 @@ If the project uses global layer folders instead of feature folders, preserve th
 
 Before completing a feature:
 
-* EF Core migration created when the schema changed
 * Entity implemented
+* EF Core configuration / DbContext changes completed when needed
+* EF Core migration created when the schema changed
 * Repository created
 * DTOs created
 * Mapperly mapper implemented

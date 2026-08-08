@@ -468,15 +468,15 @@ The project follows:
 
 Every new feature should include, when applicable:
 
+* Entity / Domain Model
+* EF Core Configuration / DbContext changes
 * EF Core Migration
-* Entity
-* DTOs
 * Repository
+* DTOs
 * Mapper
 * Service
 * Controller
 * Validation
-* Exception Handling
 * OpenAPI documentation
 * Tests
 

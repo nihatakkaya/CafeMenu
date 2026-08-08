@@ -420,16 +420,17 @@ snake_case
 
 Whenever implementing a new feature, create components in this order.
 
-1. EF Core Migration
-2. Entity
-3. Repository
-4. DTOs
-5. Mapper
-6. Service
-7. Controller
-8. Validation
-9. OpenAPI / Swagger Documentation
-10. Tests
+1. Entity / Domain Model
+2. EF Core Configuration / DbContext changes
+3. EF Core Migration
+4. Repository
+5. DTOs
+6. Mapper
+7. Service
+8. Controller
+9. Validation
+10. OpenAPI / Swagger Documentation
+11. Tests
 
 Do not skip required steps.
 
