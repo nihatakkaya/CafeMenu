@@ -18,22 +18,43 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        _logger.LogError(exception, "Unhandled exception occurred while processing request {TraceId}", httpContext.TraceIdentifier);
+        var statusCode = exception is ApplicationExceptionBase applicationException
+            ? applicationException.StatusCode
+            : StatusCodes.Status500InternalServerError;
 
-        httpContext.Response.StatusCode = StatusCodes.Status500InternalServerError;
+        if (exception is ApplicationExceptionBase)
+        {
+            _logger.LogWarning("Handled application exception for request {TraceId}: {Message}", httpContext.TraceIdentifier, exception.Message);
+        }
+        else
+        {
+            _logger.LogError(exception, "Unhandled exception occurred while processing request {TraceId}", httpContext.TraceIdentifier);
+        }
+
+        httpContext.Response.StatusCode = statusCode;
 
         var response = ApiResponse<ProblemDetails>.FailureResponse(
-            "An unexpected error occurred.",
+            exception is ApplicationExceptionBase ? exception.Message : "An unexpected error occurred.",
             new ProblemDetails
             {
-                Status = StatusCodes.Status500InternalServerError,
-                Title = "Internal Server Error",
-                Detail = "The request could not be completed.",
+                Status = statusCode,
+                Title = GetTitle(statusCode),
+                Detail = exception is ApplicationExceptionBase ? exception.Message : "The request could not be completed.",
                 Instance = httpContext.Request.Path
             });
 
         await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
         return true;
+    }
+
+    private static string GetTitle(int statusCode)
+    {
+        return statusCode switch
+        {
+            StatusCodes.Status401Unauthorized => "Unauthorized",
+            StatusCodes.Status409Conflict => "Conflict",
+            _ => "Internal Server Error"
+        };
     }
 }

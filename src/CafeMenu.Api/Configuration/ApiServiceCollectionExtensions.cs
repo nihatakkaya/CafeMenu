@@ -1,5 +1,9 @@
 using CafeMenu.Api.Common;
 using CafeMenu.Api.Exceptions;
+using CafeMenu.Api.Mappings;
+using CafeMenu.Api.Repositories;
+using CafeMenu.Api.Security;
+using CafeMenu.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CafeMenu.Api.Configuration;
@@ -30,6 +34,14 @@ public static class ApiServiceCollectionExtensions
 
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddScoped<IAppUserRepository, AppUserRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<AppUserMapper>();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
 
         return services;
     }

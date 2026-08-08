@@ -17,6 +17,7 @@ Product-specific documents:
 * `docs/DATA_MODEL.md`
 * `docs/MULTI_TENANCY.md`
 * `docs/UI_BRANDING.md`
+* `docs/PLATFORM_ADMIN_BOOTSTRAP.md`
 
 These documents are product-specific and do not replace the general repository standards.
 
@@ -121,6 +122,7 @@ Initial infrastructure:
 * Central exception handling
 * JWT authentication and authorization policies
 * EF Core DbContext and migrations
+* Secure platform admin bootstrap strategy
 * Local filesystem file storage implementation
 * OpenAPI/Swagger
 * xUnit test project
@@ -139,7 +141,8 @@ Expected dependencies:
 * `xunit`
 * `Microsoft.NET.Test.Sdk`
 * `Microsoft.AspNetCore.Mvc.Testing`
-* `Microsoft.EntityFrameworkCore.InMemory` or a PostgreSQL test-container strategy for tests
+* `Microsoft.EntityFrameworkCore.InMemory` only for tests that do not depend on relational database behavior
+* Testcontainers with PostgreSQL for PostgreSQL-specific integration tests and tenant-isolation tests
 
 Use exact versions compatible with .NET 10 and the repository standards during implementation.
 
@@ -219,4 +222,3 @@ Before claiming Version 1 complete:
 * Verify soft-delete filtering.
 * Verify file upload validation.
 * Verify no production secret was committed.
-

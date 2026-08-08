@@ -29,6 +29,11 @@ services:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-cafemenu};Username=${POSTGRES_USER:-cafemenu_user};Password=${POSTGRES_PASSWORD:-change_me_for_local_dev}
+      Jwt__Issuer: ${JWT_ISSUER:-CafeMenu.Development}
+      Jwt__Audience: ${JWT_AUDIENCE:-CafeMenu.Api}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-replace_with_local_development_key_at_least_32_chars}
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS:-14}
     ports:
       - "${API_HTTP_PORT:-8080}:8080"
 

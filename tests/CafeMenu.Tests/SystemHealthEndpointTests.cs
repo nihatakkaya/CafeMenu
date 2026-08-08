@@ -1,10 +1,5 @@
 using System.Net;
 using System.Text.Json;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-
 namespace CafeMenu.Tests;
 
 public sealed class SystemHealthEndpointTests
@@ -12,18 +7,7 @@ public sealed class SystemHealthEndpointTests
     [Fact]
     public async Task Health_ShouldReturnSuccessfulApiResponse()
     {
-        await using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder =>
-            {
-                builder.ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
-                builder.ConfigureAppConfiguration((_, configurationBuilder) =>
-                {
-                    configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
-                    {
-                        ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=cafemenu_test;Username=test;Password=test"
-                    });
-                });
-            });
+        await using var factory = new CustomWebApplicationFactory();
 
         using var client = factory.CreateClient();
 
