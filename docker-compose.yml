@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cafemenu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cafemenu}
+      POSTGRES_USER: ${POSTGRES_USER:-cafemenu_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_for_local_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/CafeMenu.Api/Dockerfile
+    container_name: cafemenu-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-cafemenu};Username=${POSTGRES_USER:-cafemenu_user};Password=${POSTGRES_PASSWORD:-change_me_for_local_dev}
+    ports:
+      - "${API_HTTP_PORT:-8080}:8080"
+
+  web:
+    build:
+      context: .
+      dockerfile: src/CafeMenu.Web/Dockerfile
+    container_name: cafemenu-web
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+    ports:
+      - "${WEB_HTTP_PORT:-8081}:8080"
+
+volumes:
+  postgres_data:
