@@ -1,0 +1,98 @@
+# Environment Configuration
+
+## ASP.NET Core Environments
+
+Use environment names consistently.
+
+Recommended environments:
+
+* Development
+* Test
+* Staging
+* Production
+
+Set the active environment with:
+
+```text
+ASPNETCORE_ENVIRONMENT=
+```
+
+---
+
+## Configuration Files
+
+Base non-secret configuration:
+
+```text
+appsettings.json
+```
+
+Environment-specific non-secret overrides may use:
+
+```text
+appsettings.Development.json
+appsettings.Test.json
+appsettings.Staging.json
+appsettings.Production.json
+```
+
+Do not store production secrets in these files.
+
+---
+
+## Environment Variables
+
+ASP.NET Core maps double underscores (`__`) to nested configuration keys.
+
+Examples
+
+```text
+ASPNETCORE_ENVIRONMENT=Development
+
+ConnectionStrings__DefaultConnection=
+
+Jwt__Secret=
+Jwt__Issuer=
+Jwt__Audience=
+Jwt__AccessTokenExpirationMinutes=
+Jwt__RefreshTokenExpirationDays=
+```
+
+If the Docker configuration uses separate database variables, they may be defined as:
+
+```text
+DB_HOST=
+DB_PORT=
+DB_NAME=
+DB_USERNAME=
+DB_PASSWORD=
+```
+
+The application configuration must map them consistently.
+
+---
+
+## Local Development Secrets
+
+For local development, prefer .NET User Secrets for application secrets:
+
+```bash
+dotnet user-secrets init
+
+dotnet user-secrets set "Jwt:Secret" "local-development-value"
+```
+
+When Docker Compose is used locally, a local `.env` file may be used for Compose variables.
+
+Do not commit secret-bearing `.env` files.
+
+---
+
+## Rules
+
+* Never commit production secrets.
+* Keep `appsettings.json` environment independent and free of secrets.
+* Keep environment-specific files free of real credentials.
+* Use environment variables, .NET User Secrets or deployment secret stores for secrets.
+* Keep Docker Compose environment-variable names consistent with ASP.NET Core configuration.
+* Do not log resolved secret values at startup.
