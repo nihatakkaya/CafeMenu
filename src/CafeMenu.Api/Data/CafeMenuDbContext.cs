@@ -23,6 +23,8 @@ public sealed class CafeMenuDbContext : DbContext
 
     public DbSet<CategoryEntity> Categories => Set<CategoryEntity>();
 
+    public DbSet<ProductEntity> Products => Set<ProductEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -33,6 +35,7 @@ public sealed class CafeMenuDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CafeConfiguration());
         modelBuilder.ApplyConfiguration(new CafeMembershipConfiguration());
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductConfiguration());
         modelBuilder.ConfigureAppUserRole();
     }
 }

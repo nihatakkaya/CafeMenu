@@ -13,6 +13,9 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<CategoryEnt
         builder.HasKey(category => category.Id)
             .HasName("pk_category");
 
+        builder.HasAlternateKey(category => new { category.CafeId, category.Id })
+            .HasName("uk_category_cafe_id");
+
         builder.Property(category => category.Id)
             .HasColumnName("id");
 

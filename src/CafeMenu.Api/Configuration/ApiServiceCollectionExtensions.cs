@@ -40,16 +40,19 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<ICafeRepository, CafeRepository>();
         services.AddScoped<ICafeMembershipRepository, CafeMembershipRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<AppUserMapper>();
         services.AddScoped<CafeMapper>();
         services.AddScoped<CategoryMapper>();
+        services.AddScoped<ProductMapper>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITenantAuthorizationService, TenantAuthorizationService>();
         services.AddScoped<ICafeService, CafeService>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<IProductService, ProductService>();
 
         return services;
     }

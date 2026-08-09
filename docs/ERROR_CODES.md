@@ -76,9 +76,11 @@ The codes are technology-independent and are used consistently by the ASP.NET Co
 
 ## Product
 
-| Code   | Description       |
-| ------ | ----------------- |
-| PRO001 | Product not found |
+| Code   | Description                           |
+| ------ | ------------------------------------- |
+| PRO001 | Product not found                     |
+| PRO002 | Product invalid category relationship |
+| PRO003 | Product reorder invalid               |
 
 ---
 

@@ -27,4 +27,6 @@ public sealed class CafeEntity
     public ICollection<CafeMembershipEntity> Memberships { get; } = new List<CafeMembershipEntity>();
 
     public ICollection<CategoryEntity> Categories { get; } = new List<CategoryEntity>();
+
+    public ICollection<ProductEntity> Products { get; } = new List<ProductEntity>();
 }
