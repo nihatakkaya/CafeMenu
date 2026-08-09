@@ -62,6 +62,15 @@ public sealed class CafeController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<CafeResponseDto>>.SuccessResponse(response, "Cafes retrieved successfully."));
     }
 
+    [HttpGet("GetMyCafes")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<MyCafeResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<MyCafeResponseDto>>>> GetMyCafes(CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.GetMyCafesAsync(GetCurrentAppUserId(), cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<MyCafeResponseDto>>.SuccessResponse(response, "Accessible cafes retrieved successfully."));
+    }
+
     [HttpPut("UpdateCafe/{id:long}")]
     [ProducesResponseType(typeof(ApiResponse<CafeResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

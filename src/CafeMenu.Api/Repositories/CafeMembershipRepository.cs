@@ -38,6 +38,28 @@ public sealed class CafeMembershipRepository : ICafeMembershipRepository
                 cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<CafeMembershipEntity>> GetActiveMembershipsForUserAsync(
+        long appUserId,
+        IReadOnlyCollection<string> roleCodes,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.CafeMemberships
+            .AsNoTracking()
+            .Include(membership => membership.Cafe)
+            .Include(membership => membership.Role)
+            .Where(membership =>
+                membership.AppUserId == appUserId &&
+                membership.IsActive &&
+                !membership.IsDeleted &&
+                membership.Cafe.IsActive &&
+                !membership.Cafe.IsDeleted &&
+                roleCodes.Contains(membership.Role.Code))
+            .OrderBy(membership => membership.Cafe.Name)
+            .ThenBy(membership => membership.Cafe.Id)
+            .ThenBy(membership => membership.Role.Code)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task AddAsync(CafeMembershipEntity membership, CancellationToken cancellationToken)
     {
         await _dbContext.CafeMemberships.AddAsync(membership, cancellationToken);

@@ -13,6 +13,7 @@ public sealed class CafeService : ICafeService
 {
     private static readonly string[] CafeReaderRoles = [ApplicationRoles.CafeOwner, ApplicationRoles.CafeManager];
     private static readonly string[] CafeOwnerRoles = [ApplicationRoles.CafeOwner];
+    private static readonly string[] PlatformAdminRoleCodes = [ApplicationRoles.PlatformAdmin];
 
     private readonly ICafeRepository _cafeRepository;
     private readonly ICafeMembershipRepository _cafeMembershipRepository;
@@ -90,6 +91,47 @@ public sealed class CafeService : ICafeService
     {
         var cafes = await _cafeRepository.GetAllAsync(cancellationToken);
         return cafes.Select(_cafeMapper.ToResponse).ToArray();
+    }
+
+    public async Task<IReadOnlyCollection<MyCafeResponseDto>> GetMyCafesAsync(long appUserId, CancellationToken cancellationToken)
+    {
+        var user = await _appUserRepository.GetByIdWithRolesAsync(appUserId, cancellationToken);
+
+        if (user is null || !user.IsActive || user.IsDeleted)
+        {
+            throw new UnauthorizedApplicationException("User is not authorized.", "AUTH004");
+        }
+
+        if (user.Roles.Any(role => role.Code == ApplicationRoles.PlatformAdmin))
+        {
+            var cafes = await _cafeRepository.GetAllAsync(cancellationToken);
+
+            return cafes
+                .Select(cafe => _cafeMapper.ToMyCafeResponse(cafe, PlatformAdminRoleCodes))
+                .ToArray();
+        }
+
+        var memberships = await _cafeMembershipRepository.GetActiveMembershipsForUserAsync(
+            appUserId,
+            CafeReaderRoles,
+            cancellationToken);
+
+        return memberships
+            .GroupBy(membership => membership.CafeId)
+            .Select(group =>
+            {
+                var cafe = group.First().Cafe;
+                var roleCodes = group
+                    .Select(membership => membership.Role.Code)
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal)
+                    .ToArray();
+
+                return _cafeMapper.ToMyCafeResponse(cafe, roleCodes);
+            })
+            .OrderBy(cafe => cafe.Name, StringComparer.Ordinal)
+            .ThenBy(cafe => cafe.Id)
+            .ToArray();
     }
 
     public async Task<CafeResponseDto> UpdateCafeAsync(
