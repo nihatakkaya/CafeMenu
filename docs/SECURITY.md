@@ -55,6 +55,14 @@ Refresh Token
 
 Refresh tokens should be revocable and stored/handled securely according to the authentication design.
 
+## Admin Web Session Token Store
+
+CafeMenu.Web must not expose backend JWT access or refresh tokens to browser JavaScript or store them in browser storage.
+
+The development `MemoryAdminSessionTokenStore` is process-local. It is allowed only in the `Development` environment because a Web process restart loses the in-memory refresh token and cannot revoke it during logout.
+
+Production-like environments must use a persistent or distributed `IAdminSessionTokenStore` implementation and shared Data Protection key management. The application must fail fast if the process-local memory store would be used outside `Development`.
+
 ---
 
 ## HTTPS

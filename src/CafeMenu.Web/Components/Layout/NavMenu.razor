@@ -13,5 +13,15 @@
                 <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
             </NavLink>
         </div>
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <form method="post" action="/account/logout">
+                        <AntiforgeryToken />
+                        <button type="submit" class="nav-link btn btn-link p-0">Logout</button>
+                    </form>
+                </div>
+            </Authorized>
+        </AuthorizeView>
     </nav>
 </div>
