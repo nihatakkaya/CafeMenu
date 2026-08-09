@@ -1,10 +1,22 @@
 using CafeMenu.Web.Components;
+using CafeMenu.Web.PublicMenu;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddOptions<PublicMenuApiOptions>()
+    .Bind(builder.Configuration.GetSection("PublicApi"))
+    .ValidateDataAnnotations()
+    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Public API base URL must be absolute.")
+    .ValidateOnStart();
+builder.Services.AddHttpClient<IPublicMenuApiClient, PublicMenuApiClient>((serviceProvider, httpClient) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<PublicMenuApiOptions>>().Value;
+    httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+});
 
 var app = builder.Build();
 
@@ -25,3 +37,5 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+public partial class Program;

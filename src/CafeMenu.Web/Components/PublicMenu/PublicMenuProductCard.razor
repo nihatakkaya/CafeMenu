@@ -1,0 +1,34 @@
+@using System.Globalization
+
+<article class="product-card @(Product.IsAvailable ? string.Empty : "is-unavailable")">
+    @if (!string.IsNullOrWhiteSpace(Product.ImageUrl))
+    {
+        <img class="product-image" src="@Product.ImageUrl" alt="@Product.Name" loading="lazy" />
+    }
+    <div class="product-content">
+        <div class="product-heading">
+            <h3>@Product.Name</h3>
+            <span class="product-price">@FormatPrice(Product.Price)</span>
+        </div>
+        @if (!string.IsNullOrWhiteSpace(Product.Description))
+        {
+            <p>@Product.Description</p>
+        }
+        @if (!Product.IsAvailable)
+        {
+            <span class="availability">Tükendi</span>
+        }
+    </div>
+</article>
+
+@code {
+    private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+    [Parameter]
+    public PublicMenuProductResponse Product { get; set; } = new();
+
+    private static string FormatPrice(decimal price)
+    {
+        return $"{price.ToString("N2", TurkishCulture)} ₺";
+    }
+}

@@ -1,10 +1,13 @@
 using CafeMenu.Api.Common;
+using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
 using CafeMenu.Api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.OpenApi;
 
 namespace CafeMenu.Api.Configuration;
 
@@ -53,12 +56,15 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<ProductMapper>();
         services.AddScoped<PublicMenuMapper>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IPlatformAdminBootstrapService, PlatformAdminBootstrapService>();
         services.AddScoped<ITenantAuthorizationService, TenantAuthorizationService>();
         services.AddScoped<ICafeService, CafeService>();
         services.AddScoped<ICafeBrandingService, CafeBrandingService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IPublicMenuService, PublicMenuService>();
+        services.AddSingleton<IConsolePasswordReader, ConsolePasswordReader>();
+        services.AddSingleton<PlatformAdminBootstrapRunner>();
 
         return services;
     }
@@ -67,7 +73,20 @@ public static class ApiServiceCollectionExtensions
     {
         services.AddEndpointsApiExplorer();
         services.AddOpenApi();
-        services.AddSwaggerGen();
+        services.AddSwaggerGen(options =>
+        {
+            options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Enter a valid JWT access token without the Bearer prefix."
+            });
+
+            options.DocumentFilter<AuthorizeDocumentFilter>();
+        });
 
         return services;
     }

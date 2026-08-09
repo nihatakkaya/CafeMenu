@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CafeMenu.Api\CafeMenu.Api.csproj" />
+    <ProjectReference Include="..\..\src\CafeMenu.Web\CafeMenu.Web.csproj" Aliases="CafeMenuWeb" />
   </ItemGroup>
 
 </Project>

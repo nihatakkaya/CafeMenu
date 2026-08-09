@@ -1,3 +1,4 @@
+using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +9,13 @@ builder.Services.AddApplicationDatabase(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 
 var app = builder.Build();
+
+if (PlatformAdminBootstrapCommand.IsRequested(args))
+{
+    var bootstrapRunner = app.Services.GetRequiredService<PlatformAdminBootstrapRunner>();
+    Environment.ExitCode = await bootstrapRunner.RunAsync(args, CancellationToken.None);
+    return;
+}
 
 app.UseExceptionHandler();
 
