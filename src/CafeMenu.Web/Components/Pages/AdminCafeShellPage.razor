@@ -1,0 +1,108 @@
+@page "/admin/cafes/{CafeId:long}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IAdminCafeApiClient AdminCafeApiClient
+
+<PageTitle>Cafe Admin</PageTitle>
+
+<section class="admin-page admin-cafe-shell">
+    <a class="admin-back-link" href="/admin">Cafe listesine dön</a>
+
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h1>Yükleniyor</h1>
+            <p>Cafe erişiminiz doğrulanıyor.</p>
+        </section>
+    }
+    else if (_status == AdminCafeListStatus.Failure)
+    {
+        <section class="admin-state admin-state-warning" role="alert">
+            <h1>Cafe bilgisi yüklenemedi</h1>
+            <p>Şu anda cafe erişimi doğrulanamıyor. Lütfen daha sonra tekrar deneyin.</p>
+        </section>
+    }
+    else if (_cafe is null)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Erişim yok</h1>
+            <p>Bu cafe hesabınız için erişilebilir değil veya artık yönetilebilir durumda değil.</p>
+        </section>
+    }
+    else
+    {
+        <header class="admin-shell-header">
+            <div>
+                <p class="admin-kicker">Cafe Admin</p>
+                <h1>@_cafe.Name</h1>
+                <p class="admin-page-summary">Cafe ID: @_cafe.Id</p>
+            </div>
+            <div class="admin-shell-status">
+                <span class="@GetActiveBadgeClass(_cafe.IsActive)">@GetActiveLabel(_cafe.IsActive)</span>
+                <span class="@GetPublishedBadgeClass(_cafe.IsPublished)">@GetPublishedLabel(_cafe.IsPublished)</span>
+            </div>
+        </header>
+
+        <section class="admin-shell-panel">
+            <dl>
+                <div>
+                    <dt>Slug</dt>
+                    <dd>@_cafe.Slug</dd>
+                </div>
+                <div>
+                    <dt>Roller</dt>
+                    <dd>@string.Join(", ", _cafe.RoleCodes)</dd>
+                </div>
+            </dl>
+
+            <p>Kategori, ürün ve görünüm yönetimi sonraki fazlarda eklenecek.</p>
+            <p class="admin-security-note">Bu ekran route bilgisini yalnız seçim bağlamı olarak kullanır. Gerçek yetkilendirme her backend API çağrısında tekrar yapılacaktır.</p>
+        </section>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public long CafeId { get; set; }
+
+    private bool _isLoading = true;
+    private AdminCafeListStatus _status;
+    private AdminCafeResponse? _cafe;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _cafe = null;
+
+        var result = await AdminCafeApiClient.GetMyCafesAsync(CancellationToken.None);
+        _status = result.Status;
+        _cafe = result.Status == AdminCafeListStatus.Success
+            ? result.Cafes.SingleOrDefault(cafe => cafe.Id == CafeId)
+            : null;
+
+        _isLoading = false;
+    }
+
+    private static string GetActiveLabel(bool isActive)
+    {
+        return isActive ? "Aktif" : "Pasif";
+    }
+
+    private static string GetPublishedLabel(bool isPublished)
+    {
+        return isPublished ? "Yayında" : "Taslak";
+    }
+
+    private static string GetActiveBadgeClass(bool isActive)
+    {
+        return isActive
+            ? "admin-badge admin-badge-success"
+            : "admin-badge admin-badge-muted";
+    }
+
+    private static string GetPublishedBadgeClass(bool isPublished)
+    {
+        return isPublished
+            ? "admin-badge admin-badge-info"
+            : "admin-badge admin-badge-muted";
+    }
+}

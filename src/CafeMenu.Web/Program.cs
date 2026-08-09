@@ -1,4 +1,5 @@
 using CafeMenu.Web.Components;
+using CafeMenu.Web.AdminCafe;
 using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.PublicMenu;
 using Microsoft.Extensions.Options;
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddOptions<PublicMenuApiOptions>()
     .Bind(builder.Configuration.GetSection("PublicApi"))
     .ValidateDataAnnotations()
@@ -33,6 +35,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseAdminRouteAuthorizationRedirect();
 app.UseAuthorization();
 app.UseAntiforgery();
 

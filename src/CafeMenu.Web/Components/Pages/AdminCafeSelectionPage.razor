@@ -1,0 +1,116 @@
+@page "/admin"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IAdminCafeApiClient AdminCafeApiClient
+
+<PageTitle>Admin</PageTitle>
+
+<section class="admin-page admin-cafe-selection">
+    <header class="admin-page-header">
+        <p class="admin-kicker">CafeMenu Admin</p>
+        <h1>Cafe seçimi</h1>
+        <p class="admin-page-summary">Yönetim yapmak istediğiniz cafeyi seçin.</p>
+    </header>
+
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h2>Yükleniyor</h2>
+            <p>Erişebildiğiniz cafeler hazırlanıyor.</p>
+        </section>
+    }
+    else if (_status == AdminCafeListStatus.Failure)
+    {
+        <section class="admin-state admin-state-warning" role="alert">
+            <h2>Cafeler yüklenemedi</h2>
+            <p>Şu anda cafe listesi alınamıyor. Lütfen daha sonra tekrar deneyin.</p>
+        </section>
+    }
+    else if (_cafes.Count == 0)
+    {
+        <section class="admin-state">
+            <h2>Erişilebilir cafe yok</h2>
+            <p>Hesabınıza atanmış aktif bir cafe bulunmuyor.</p>
+        </section>
+    }
+    else
+    {
+        <section class="admin-cafe-grid" aria-label="Erişilebilir cafeler">
+            @foreach (var cafe in _cafes)
+            {
+                <article class="admin-cafe-card">
+                    <div class="admin-cafe-card-main">
+                        @if (!string.IsNullOrWhiteSpace(cafe.LogoImageUrl))
+                        {
+                            <img class="admin-cafe-logo" src="@cafe.LogoImageUrl" alt="" />
+                        }
+                        else
+                        {
+                            <div class="admin-cafe-logo admin-cafe-logo-fallback" aria-hidden="true">@GetInitial(cafe.Name)</div>
+                        }
+
+                        <div class="admin-cafe-copy">
+                            <h2>@cafe.Name</h2>
+                            <p>@cafe.Slug</p>
+                        </div>
+                    </div>
+
+                    <div class="admin-cafe-meta" aria-label="@($"{cafe.Name} durum ve rol bilgileri")">
+                        <span class="@GetActiveBadgeClass(cafe.IsActive)">@GetActiveLabel(cafe.IsActive)</span>
+                        <span class="@GetPublishedBadgeClass(cafe.IsPublished)">@GetPublishedLabel(cafe.IsPublished)</span>
+                        @foreach (var roleCode in cafe.RoleCodes)
+                        {
+                            <span class="admin-badge admin-badge-role">@roleCode</span>
+                        }
+                    </div>
+
+                    <a class="admin-manage-link" href="@($"/admin/cafes/{cafe.Id}")">Yönet</a>
+                </article>
+            }
+        </section>
+    }
+</section>
+
+@code {
+    private bool _isLoading = true;
+    private AdminCafeListStatus _status;
+    private IReadOnlyCollection<AdminCafeResponse> _cafes = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await AdminCafeApiClient.GetMyCafesAsync(CancellationToken.None);
+        _status = result.Status;
+        _cafes = result.Cafes;
+        _isLoading = false;
+    }
+
+    private static string GetInitial(string name)
+    {
+        return string.IsNullOrWhiteSpace(name)
+            ? "C"
+            : name.Trim()[0].ToString().ToUpperInvariant();
+    }
+
+    private static string GetActiveLabel(bool isActive)
+    {
+        return isActive ? "Aktif" : "Pasif";
+    }
+
+    private static string GetPublishedLabel(bool isPublished)
+    {
+        return isPublished ? "Yayında" : "Taslak";
+    }
+
+    private static string GetActiveBadgeClass(bool isActive)
+    {
+        return isActive
+            ? "admin-badge admin-badge-success"
+            : "admin-badge admin-badge-muted";
+    }
+
+    private static string GetPublishedBadgeClass(bool isPublished)
+    {
+        return isPublished
+            ? "admin-badge admin-badge-info"
+            : "admin-badge admin-badge-muted";
+    }
+}
