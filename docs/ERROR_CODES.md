@@ -40,9 +40,10 @@ The codes are technology-independent and are used consistently by the ASP.NET Co
 
 ## Category
 
-| Code   | Description        |
-| ------ | ------------------ |
-| CAT001 | Category not found |
+| Code   | Description              |
+| ------ | ------------------------ |
+| CAT001 | Category not found       |
+| CAT002 | Category reorder invalid |
 
 ---
 

@@ -2,6 +2,8 @@ namespace CafeMenu.Api.Exceptions;
 
 public static class ApplicationErrorCodes
 {
+    public const string CategoryNotFound = "CAT001";
+    public const string CategoryReorderInvalid = "CAT002";
     public const string CafeNotFound = "CAFE001";
     public const string CafeSlugAlreadyExists = "CAFE002";
     public const string CafeInactive = "CAFE003";

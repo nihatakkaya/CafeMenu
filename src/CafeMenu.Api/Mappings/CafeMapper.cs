@@ -12,6 +12,7 @@ public partial class CafeMapper
     [MapperIgnoreSource(nameof(CafeEntity.IsDeleted))]
     [MapperIgnoreSource(nameof(CafeEntity.DeletedAt))]
     [MapperIgnoreSource(nameof(CafeEntity.Memberships))]
+    [MapperIgnoreSource(nameof(CafeEntity.Categories))]
     public partial CafeResponseDto ToResponse(CafeEntity cafe);
 
     [MapperIgnoreSource(nameof(CafeEntity.LogoImageUrl))]
@@ -19,6 +20,7 @@ public partial class CafeMapper
     [MapperIgnoreSource(nameof(CafeEntity.IsDeleted))]
     [MapperIgnoreSource(nameof(CafeEntity.DeletedAt))]
     [MapperIgnoreSource(nameof(CafeEntity.Memberships))]
+    [MapperIgnoreSource(nameof(CafeEntity.Categories))]
     private partial CafeDetailResponseDto ToDetailResponseInternal(
         CafeEntity cafe,
         IReadOnlyCollection<CafeMembershipResponseDto> memberships);

@@ -25,4 +25,6 @@ public sealed class CafeEntity
     public DateTimeOffset? DeletedAt { get; set; }
 
     public ICollection<CafeMembershipEntity> Memberships { get; } = new List<CafeMembershipEntity>();
+
+    public ICollection<CategoryEntity> Categories { get; } = new List<CategoryEntity>();
 }
