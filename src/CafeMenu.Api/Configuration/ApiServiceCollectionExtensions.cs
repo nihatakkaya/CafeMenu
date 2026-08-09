@@ -39,6 +39,7 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<ICafeRepository, CafeRepository>();
         services.AddScoped<ICafeMembershipRepository, CafeMembershipRepository>();
+        services.AddScoped<ICafeThemeRepository, CafeThemeRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
@@ -46,11 +47,13 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<AppUserMapper>();
         services.AddScoped<CafeMapper>();
+        services.AddScoped<CafeThemeMapper>();
         services.AddScoped<CategoryMapper>();
         services.AddScoped<ProductMapper>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<ITenantAuthorizationService, TenantAuthorizationService>();
         services.AddScoped<ICafeService, CafeService>();
+        services.AddScoped<ICafeBrandingService, CafeBrandingService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<IProductService, ProductService>();
 

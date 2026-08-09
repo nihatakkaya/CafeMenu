@@ -25,6 +25,8 @@ public sealed class CafeMenuDbContext : DbContext
 
     public DbSet<ProductEntity> Products => Set<ProductEntity>();
 
+    public DbSet<CafeThemeEntity> CafeThemes => Set<CafeThemeEntity>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -36,6 +38,7 @@ public sealed class CafeMenuDbContext : DbContext
         modelBuilder.ApplyConfiguration(new CafeMembershipConfiguration());
         modelBuilder.ApplyConfiguration(new CategoryConfiguration());
         modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new CafeThemeConfiguration());
         modelBuilder.ConfigureAppUserRole();
     }
 }

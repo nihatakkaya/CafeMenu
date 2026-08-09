@@ -3,6 +3,7 @@ using System;
 using CafeMenu.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CafeMenu.Api.Migrations
 {
     [DbContext(typeof(CafeMenuDbContext))]
-    partial class CafeMenuDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260809143638_CreateCafeThemeSchema")]
+    partial class CreateCafeThemeSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
