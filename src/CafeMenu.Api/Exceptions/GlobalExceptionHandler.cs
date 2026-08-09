@@ -18,7 +18,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
-        var statusCode = exception is ApplicationExceptionBase applicationException
+        var applicationException = exception as ApplicationExceptionBase;
+        var statusCode = applicationException is not null
             ? applicationException.StatusCode
             : StatusCodes.Status500InternalServerError;
 
@@ -33,15 +34,22 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = statusCode;
 
-        var response = ApiResponse<ProblemDetails>.FailureResponse(
-            exception is ApplicationExceptionBase ? exception.Message : "An unexpected error occurred.",
-            new ProblemDetails
+        var problemDetails = new ProblemDetails
             {
                 Status = statusCode,
                 Title = GetTitle(statusCode),
                 Detail = exception is ApplicationExceptionBase ? exception.Message : "The request could not be completed.",
                 Instance = httpContext.Request.Path
-            });
+            };
+
+        if (!string.IsNullOrWhiteSpace(applicationException?.ErrorCode))
+        {
+            problemDetails.Extensions["errorCode"] = applicationException.ErrorCode;
+        }
+
+        var response = ApiResponse<ProblemDetails>.FailureResponse(
+            exception is ApplicationExceptionBase ? exception.Message : "An unexpected error occurred.",
+            problemDetails);
 
         await httpContext.Response.WriteAsJsonAsync(response, cancellationToken);
 
@@ -53,6 +61,8 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         return statusCode switch
         {
             StatusCodes.Status401Unauthorized => "Unauthorized",
+            StatusCodes.Status403Forbidden => "Forbidden",
+            StatusCodes.Status404NotFound => "Not Found",
             StatusCodes.Status409Conflict => "Conflict",
             _ => "Internal Server Error"
         };

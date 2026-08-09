@@ -15,4 +15,6 @@ public sealed class RoleEntity
     public DateTimeOffset UpdatedAt { get; set; }
 
     public ICollection<AppUserEntity> Users { get; } = new List<AppUserEntity>();
+
+    public ICollection<CafeMembershipEntity> CafeMemberships { get; } = new List<CafeMembershipEntity>();
 }

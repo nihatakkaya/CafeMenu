@@ -46,6 +46,33 @@ The codes are technology-independent and are used consistently by the ASP.NET Co
 
 ---
 
+## Cafe
+
+| Code    | Description              |
+| ------- | ------------------------ |
+| CAFE001 | Cafe not found           |
+| CAFE002 | Cafe slug already exists |
+| CAFE003 | Cafe inactive            |
+
+---
+
+## Cafe Membership
+
+| Code   | Description                    |
+| ------ | ------------------------------ |
+| MEM001 | Cafe membership not found      |
+| MEM002 | Cafe membership already exists |
+
+---
+
+## Tenant Authorization
+
+| Code      | Description             |
+| --------- | ----------------------- |
+| TENANT001 | Tenant access forbidden |
+
+---
+
 ## Product
 
 | Code   | Description       |

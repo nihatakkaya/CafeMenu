@@ -1,0 +1,11 @@
+namespace CafeMenu.Api.Exceptions;
+
+public static class ApplicationErrorCodes
+{
+    public const string CafeNotFound = "CAFE001";
+    public const string CafeSlugAlreadyExists = "CAFE002";
+    public const string CafeInactive = "CAFE003";
+    public const string CafeMembershipNotFound = "MEM001";
+    public const string CafeMembershipAlreadyExists = "MEM002";
+    public const string TenantAccessForbidden = "TENANT001";
+}

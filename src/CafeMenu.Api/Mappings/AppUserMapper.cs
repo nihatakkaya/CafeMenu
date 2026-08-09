@@ -16,6 +16,7 @@ public partial class AppUserMapper
     [MapperIgnoreSource(nameof(AppUserEntity.DeletedAt))]
     [MapperIgnoreSource(nameof(AppUserEntity.Roles))]
     [MapperIgnoreSource(nameof(AppUserEntity.RefreshTokens))]
+    [MapperIgnoreSource(nameof(AppUserEntity.CafeMemberships))]
     private partial UserResponseDto ToResponseInternal(AppUserEntity user, IReadOnlyCollection<string> roles);
 
     public UserResponseDto ToResponse(AppUserEntity user)

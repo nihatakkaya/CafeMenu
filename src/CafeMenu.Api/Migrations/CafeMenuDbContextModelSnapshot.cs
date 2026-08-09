@@ -88,6 +88,139 @@ namespace CafeMenu.Api.Migrations
                     b.ToTable("app_user", "public");
                 });
 
+            modelBuilder.Entity("CafeMenu.Api.Entities.CafeEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CoverImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("cover_image_url");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_published");
+
+                    b.Property<string>("LogoImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("logo_image_url");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(160)
+                        .HasColumnType("character varying(160)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("slug");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cafe");
+
+                    b.HasIndex("Slug")
+                        .IsUnique()
+                        .HasDatabaseName("uk_cafe_slug");
+
+                    b.ToTable("cafe", "public");
+                });
+
+            modelBuilder.Entity("CafeMenu.Api.Entities.CafeMembershipEntity", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("AppUserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("app_user_id");
+
+                    b.Property<long>("CafeId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cafe_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true)
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_deleted");
+
+                    b.Property<long>("RoleId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("role_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cafe_membership");
+
+                    b.HasIndex("AppUserId", "CafeId")
+                        .IsUnique()
+                        .HasFilter("is_active = true AND is_deleted = false")
+                        .HasDatabaseName("uk_cafe_membership_app_user_cafe_active");
+
+                    b.HasIndex("CafeId")
+                        .HasDatabaseName("idx_cafe_membership_cafe");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("idx_cafe_membership_role");
+
+                    b.ToTable("cafe_membership", "public");
+                });
+
             modelBuilder.Entity("CafeMenu.Api.Entities.RefreshTokenEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -235,6 +368,36 @@ namespace CafeMenu.Api.Migrations
                     b.ToTable("app_user_role", "public");
                 });
 
+            modelBuilder.Entity("CafeMenu.Api.Entities.CafeMembershipEntity", b =>
+                {
+                    b.HasOne("CafeMenu.Api.Entities.AppUserEntity", "AppUser")
+                        .WithMany("CafeMemberships")
+                        .HasForeignKey("AppUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cafe_membership_app_user");
+
+                    b.HasOne("CafeMenu.Api.Entities.CafeEntity", "Cafe")
+                        .WithMany("Memberships")
+                        .HasForeignKey("CafeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cafe_membership_cafe");
+
+                    b.HasOne("CafeMenu.Api.Entities.RoleEntity", "Role")
+                        .WithMany("CafeMemberships")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_cafe_membership_role");
+
+                    b.Navigation("AppUser");
+
+                    b.Navigation("Cafe");
+
+                    b.Navigation("Role");
+                });
+
             modelBuilder.Entity("CafeMenu.Api.Entities.RefreshTokenEntity", b =>
                 {
                     b.HasOne("CafeMenu.Api.Entities.AppUserEntity", "AppUser")
@@ -266,7 +429,19 @@ namespace CafeMenu.Api.Migrations
 
             modelBuilder.Entity("CafeMenu.Api.Entities.AppUserEntity", b =>
                 {
+                    b.Navigation("CafeMemberships");
+
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("CafeMenu.Api.Entities.CafeEntity", b =>
+                {
+                    b.Navigation("Memberships");
+                });
+
+            modelBuilder.Entity("CafeMenu.Api.Entities.RoleEntity", b =>
+                {
+                    b.Navigation("CafeMemberships");
                 });
 #pragma warning restore 612, 618
         }

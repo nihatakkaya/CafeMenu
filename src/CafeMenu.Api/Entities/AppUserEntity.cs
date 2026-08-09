@@ -25,4 +25,6 @@ public sealed class AppUserEntity
     public ICollection<RoleEntity> Roles { get; } = new List<RoleEntity>();
 
     public ICollection<RefreshTokenEntity> RefreshTokens { get; } = new List<RefreshTokenEntity>();
+
+    public ICollection<CafeMembershipEntity> CafeMemberships { get; } = new List<CafeMembershipEntity>();
 }
