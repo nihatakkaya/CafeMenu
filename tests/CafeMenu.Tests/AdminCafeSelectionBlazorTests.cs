@@ -175,7 +175,9 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("/admin/cafes/42/categories", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/products", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/branding", html, StringComparison.Ordinal);
-        Assert.Contains("QR yönetimi ve gelişmiş ayarlar sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("/admin/cafes/42/settings", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Ayarları", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("QR yönetimi sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
     }
 
     [Fact]

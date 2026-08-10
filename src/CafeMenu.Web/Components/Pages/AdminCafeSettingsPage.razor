@@ -1,0 +1,318 @@
+@page "/admin/cafes/{CafeId:long}/settings"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IAdminCafeApiClient AdminCafeApiClient
+@inject IAdminCafeSettingsApiClient AdminCafeSettingsApiClient
+
+<PageTitle>Cafe Ayarları</PageTitle>
+
+<section class="admin-page admin-cafe-settings-page">
+    <nav class="admin-breadcrumb" aria-label="Admin navigation">
+        <a href="/admin">Cafe listesi</a>
+        @if (_cafe is not null)
+        {
+            <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
+            <a href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
+            <a href="@($"/admin/cafes/{_cafe.Id}/products")">Ürünler</a>
+            <a href="@($"/admin/cafes/{_cafe.Id}/branding")">Görünüm</a>
+            <a href="@($"/c/{CurrentSlug}")" target="_blank" rel="noopener noreferrer">Public menü</a>
+        }
+    </nav>
+
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h1>Yükleniyor</h1>
+            <p>Cafe ayarları hazırlanıyor.</p>
+        </section>
+    }
+    else if (_accessLoadFailed)
+    {
+        <section class="admin-state admin-state-warning" role="alert">
+            <h1>Cafe erişimi doğrulanamadı</h1>
+            <p>Şu anda cafe erişimi kontrol edilemiyor. Lütfen daha sonra tekrar deneyin.</p>
+        </section>
+    }
+    else if (_cafe is null)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Erişim yok</h1>
+            <p>Bu cafe hesabınız için erişilebilir değil veya artık yönetilebilir durumda değil.</p>
+        </section>
+    }
+    else
+    {
+        <header class="admin-page-header">
+            <div>
+                <p class="admin-kicker">Cafe Ayarları</p>
+                <h1>@CurrentName</h1>
+                <p class="admin-page-summary">Backend tarafından desteklenen temel cafe bilgilerini yönetin.</p>
+            </div>
+            <div class="admin-header-meta">
+                <span class="@GetActiveBadgeClass(CurrentIsActive)">@GetActiveLabel(CurrentIsActive)</span>
+                <span class="@GetPublishedBadgeClass(CurrentIsPublished)">@GetPublishedLabel(CurrentIsPublished)</span>
+            </div>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(_pageMessage))
+        {
+            <section class="@_pageMessageCssClass" role="status">@_pageMessage</section>
+        }
+
+        @if (_settingsLoadFailed)
+        {
+            <section class="admin-state admin-state-warning" role="alert">
+                <h2>Cafe ayarları yüklenemedi</h2>
+                <p>Şu anda temel cafe bilgileri alınamıyor.</p>
+            </section>
+        }
+        else if (_settings is not null)
+        {
+            <div class="admin-settings-layout">
+                <section class="admin-panel">
+                    <h2>Temel bilgiler</h2>
+                    @if (CanAttemptUpdate)
+                    {
+                        <EditForm Model="_formModel" OnValidSubmit="SaveSettingsAsync" FormName="UpdateCafeSettingsForm" method="post">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
+
+                            <div class="admin-form-grid">
+                                <label>
+                                    Cafe adı
+                                    <InputText @bind-Value="_formModel.Name" maxlength="160" />
+                                </label>
+                                <label>
+                                    Slug
+                                    <InputText @bind-Value="_formModel.Slug" maxlength="120" />
+                                </label>
+                            </div>
+
+                            <div class="admin-actions">
+                                <button class="admin-primary-button" type="submit" disabled="@_isSaving">Kaydet</button>
+                                <a class="admin-secondary-button" href="@CurrentSettingsRoute">Sıfırla</a>
+                            </div>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <section class="admin-state admin-state-info">
+                            <h3>Salt okunur</h3>
+                            <p>Bu cafe için temel ayar değişiklikleri backend policy gereği owner veya platform admin işlemi olarak ele alınır.</p>
+                        </section>
+                    }
+                </section>
+
+                <aside class="admin-panel">
+                    <h2>Mevcut durum</h2>
+                    <dl class="admin-settings-summary">
+                        <div>
+                            <dt>Cafe ID</dt>
+                            <dd>@_settings.Id</dd>
+                        </div>
+                        <div>
+                            <dt>Ad</dt>
+                            <dd>@CurrentName</dd>
+                        </div>
+                        <div>
+                            <dt>Slug</dt>
+                            <dd>@CurrentSlug</dd>
+                        </div>
+                        <div>
+                            <dt>Roller</dt>
+                            <dd>@string.Join(", ", _cafe.RoleCodes)</dd>
+                        </div>
+                        <div>
+                            <dt>Public menü</dt>
+                            <dd><a href="@($"/c/{CurrentSlug}")" target="_blank" rel="noopener noreferrer">/c/@CurrentSlug</a></dd>
+                        </div>
+                    </dl>
+                    <p class="admin-security-note">Route üzerindeki cafe id yalnız seçim bağlamıdır. Gerçek tenant authorization her backend çağrısında tekrar uygulanır.</p>
+                </aside>
+            </div>
+
+            <section class="admin-panel admin-contract-note">
+                <h2>Bu fazda düzenlenmeyen alanlar</h2>
+                <p>Logo ve kapak görseli mevcut branding sözleşmesi üzerinden yönetilir. Aktif/pasif ve yayın durumu için bu fazda fake toggle oluşturulmadı.</p>
+            </section>
+        }
+    }
+</section>
+
+@code {
+    [Parameter]
+    public long CafeId { get; set; }
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _accessLoadFailed;
+    private bool _settingsLoadFailed;
+    private string? _pageMessage;
+    private string _pageMessageCssClass = "admin-message";
+    private AdminCafeResponse? _cafe;
+    private AdminCafeSettingsResponse? _settings;
+    private AdminCafeSettingsFormModel _formModel = new();
+
+    [SupplyParameterFromForm(FormName = "UpdateCafeSettingsForm", Name = "_formModel")]
+    private AdminCafeSettingsFormModel? SettingsFormModel { get; set; }
+
+    private string CurrentSettingsRoute => $"/admin/cafes/{CafeId}/settings";
+
+    private string CurrentName => _settings?.Name ?? _cafe?.Name ?? string.Empty;
+
+    private string CurrentSlug => _settings?.Slug ?? _cafe?.Slug ?? string.Empty;
+
+    private bool CurrentIsActive => _settings?.IsActive ?? _cafe?.IsActive ?? false;
+
+    private bool CurrentIsPublished => _settings?.IsPublished ?? _cafe?.IsPublished ?? false;
+
+    private bool CanAttemptUpdate => _cafe is not null &&
+        (_cafe.RoleCodes.Contains("PLATFORM_ADMIN", StringComparer.Ordinal) ||
+            _cafe.RoleCodes.Contains("CAFE_OWNER", StringComparer.Ordinal));
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ResetPageState();
+        _formModel = SettingsFormModel ?? new AdminCafeSettingsFormModel();
+
+        var cafeResult = await AdminCafeApiClient.GetMyCafesAsync(CancellationToken.None);
+        if (cafeResult.Status == AdminCafeListStatus.Failure)
+        {
+            _accessLoadFailed = true;
+            _isLoading = false;
+            return;
+        }
+
+        _cafe = cafeResult.Cafes.SingleOrDefault(cafe => cafe.Id == CafeId);
+        if (_cafe is null)
+        {
+            _isLoading = false;
+            return;
+        }
+
+        await LoadSettingsAsync(shouldApplyToForm: SettingsFormModel is null);
+        _isLoading = false;
+    }
+
+    private async Task LoadSettingsAsync(bool shouldApplyToForm)
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        _settingsLoadFailed = false;
+        var result = await AdminCafeSettingsApiClient.GetCafeSettingsAsync(_cafe.Id, CancellationToken.None);
+        if (result.Status == AdminCafeSettingsRequestStatus.Success && result.Settings is not null)
+        {
+            _settings = result.Settings;
+            if (shouldApplyToForm)
+            {
+                _formModel = AdminCafeSettingsFormModel.FromSettings(result.Settings);
+            }
+
+            return;
+        }
+
+        _settings = null;
+        _settingsLoadFailed = true;
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        if (_cafe is null || !CanAttemptUpdate)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        ClearMessage();
+
+        try
+        {
+            var result = await AdminCafeSettingsApiClient.UpdateCafeSettingsAsync(
+                _cafe.Id,
+                new AdminUpdateCafeSettingsRequest(
+                    _formModel.Name.Trim(),
+                    NormalizeOptionalText(_formModel.Slug)),
+                CancellationToken.None);
+
+            if (result.Status == AdminCafeSettingsRequestStatus.Success && result.Settings is not null)
+            {
+                _settings = result.Settings;
+                _formModel = AdminCafeSettingsFormModel.FromSettings(result.Settings);
+                SetSuccessMessage("Cafe ayarları kaydedildi.");
+                return;
+            }
+
+            if (result.Status == AdminCafeSettingsRequestStatus.ValidationError)
+            {
+                SetErrorMessage("Form alanlarını kontrol edin. Backend doğrulaması isteği reddetti.");
+                return;
+            }
+
+            SetErrorMessage("Cafe ayarları kaydedilemedi.");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ResetPageState()
+    {
+        _isLoading = true;
+        _isSaving = false;
+        _accessLoadFailed = false;
+        _settingsLoadFailed = false;
+        _cafe = null;
+        _settings = null;
+        ClearMessage();
+    }
+
+    private void SetSuccessMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-success";
+    }
+
+    private void SetErrorMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-error";
+    }
+
+    private void ClearMessage()
+    {
+        _pageMessage = null;
+        _pageMessageCssClass = "admin-message";
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string GetActiveLabel(bool isActive)
+    {
+        return isActive ? "Aktif" : "Pasif";
+    }
+
+    private static string GetPublishedLabel(bool isPublished)
+    {
+        return isPublished ? "Yayında" : "Taslak";
+    }
+
+    private static string GetActiveBadgeClass(bool isActive)
+    {
+        return isActive
+            ? "admin-badge admin-badge-success"
+            : "admin-badge admin-badge-muted";
+    }
+
+    private static string GetPublishedBadgeClass(bool isPublished)
+    {
+        return isPublished
+            ? "admin-badge admin-badge-info"
+            : "admin-badge admin-badge-muted";
+    }
+}

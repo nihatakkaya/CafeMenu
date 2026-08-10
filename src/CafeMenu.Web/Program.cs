@@ -1,6 +1,7 @@
 using CafeMenu.Web.Components;
 using CafeMenu.Web.AdminBranding;
 using CafeMenu.Web.AdminCafe;
+using CafeMenu.Web.AdminCafeSettings;
 using CafeMenu.Web.AdminCategory;
 using CafeMenu.Web.AdminProduct;
 using CafeMenu.Web.AdminAuth;
@@ -15,6 +16,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
+builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
 builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
 builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
 builder.Services.AddOptions<PublicMenuApiOptions>()
