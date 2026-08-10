@@ -115,6 +115,31 @@
     padding: 1rem;
 }
 
+.admin-shell-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+
+.admin-shell-action-link {
+    align-items: center;
+    background: #203247;
+    border-radius: 8px;
+    color: #ffffff;
+    display: inline-flex;
+    font-weight: 700;
+    min-height: 42px;
+    padding: 0.65rem 0.9rem;
+    text-decoration: none;
+}
+
+.admin-shell-action-link:hover,
+.admin-shell-action-link:focus {
+    background: #314964;
+    color: #ffffff;
+}
+
 .admin-shell-panel dl {
     display: grid;
     gap: 0.8rem;
