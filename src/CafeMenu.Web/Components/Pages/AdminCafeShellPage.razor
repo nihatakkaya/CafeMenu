@@ -46,6 +46,7 @@
             <nav class="admin-shell-actions" aria-label="Cafe yönetim alanları">
                 <a class="admin-shell-action-link" href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
                 <a class="admin-shell-action-link" href="@($"/admin/cafes/{_cafe.Id}/products")">Ürünler</a>
+                <a class="admin-shell-action-link" href="@($"/admin/cafes/{_cafe.Id}/branding")">Görünüm</a>
             </nav>
 
             <dl>
@@ -59,7 +60,7 @@
                 </div>
             </dl>
 
-            <p>Görünüm yönetimi sonraki fazlarda eklenecek.</p>
+            <p>QR yönetimi ve gelişmiş ayarlar sonraki fazlarda eklenecek.</p>
             <p class="admin-security-note">Bu ekran route bilgisini yalnız seçim bağlamı olarak kullanır. Gerçek yetkilendirme her backend API çağrısında tekrar yapılacaktır.</p>
         </section>
     }

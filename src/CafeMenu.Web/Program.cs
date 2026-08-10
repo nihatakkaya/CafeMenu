@@ -1,4 +1,5 @@
 using CafeMenu.Web.Components;
+using CafeMenu.Web.AdminBranding;
 using CafeMenu.Web.AdminCafe;
 using CafeMenu.Web.AdminCategory;
 using CafeMenu.Web.AdminProduct;
@@ -12,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
 builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
