@@ -6,18 +6,6 @@
 <PageTitle>Cafe Ayarları</PageTitle>
 
 <section class="admin-page admin-cafe-settings-page">
-    <nav class="admin-breadcrumb" aria-label="Admin navigation">
-        <a href="/admin">Cafe listesi</a>
-        @if (_cafe is not null)
-        {
-            <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/products")">Ürünler</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/branding")">Görünüm</a>
-            <a href="@($"/c/{CurrentSlug}")" target="_blank" rel="noopener noreferrer">Public menü</a>
-        }
-    </nav>
-
     @if (_isLoading)
     {
         <section class="admin-state" aria-live="polite">
@@ -41,17 +29,11 @@
     }
     else
     {
-        <header class="admin-page-header">
-            <div>
-                <p class="admin-kicker">Cafe Ayarları</p>
-                <h1>@CurrentName</h1>
-                <p class="admin-page-summary">Backend tarafından desteklenen temel cafe bilgilerini yönetin.</p>
-            </div>
-            <div class="admin-header-meta">
-                <span class="@GetActiveBadgeClass(CurrentIsActive)">@GetActiveLabel(CurrentIsActive)</span>
-                <span class="@GetPublishedBadgeClass(CurrentIsPublished)">@GetPublishedLabel(CurrentIsPublished)</span>
-            </div>
-        </header>
+        <AdminCafeHeader
+            Cafe="@BuildHeaderCafe()"
+            ActiveSection="AdminCafeSection.Settings"
+            Kicker="Cafe Ayarları"
+            Summary="Backend tarafından desteklenen temel cafe bilgilerini yönetin." />
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
         {
@@ -160,10 +142,6 @@
     private string CurrentName => _settings?.Name ?? _cafe?.Name ?? string.Empty;
 
     private string CurrentSlug => _settings?.Slug ?? _cafe?.Slug ?? string.Empty;
-
-    private bool CurrentIsActive => _settings?.IsActive ?? _cafe?.IsActive ?? false;
-
-    private bool CurrentIsPublished => _settings?.IsPublished ?? _cafe?.IsPublished ?? false;
 
     private bool CanAttemptUpdate => _cafe is not null &&
         (_cafe.RoleCodes.Contains("PLATFORM_ADMIN", StringComparer.Ordinal) ||
@@ -292,27 +270,22 @@
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
-    private static string GetActiveLabel(bool isActive)
+    private AdminCafeResponse BuildHeaderCafe()
     {
-        return isActive ? "Aktif" : "Pasif";
-    }
+        if (_cafe is null)
+        {
+            return new AdminCafeResponse();
+        }
 
-    private static string GetPublishedLabel(bool isPublished)
-    {
-        return isPublished ? "Yayında" : "Taslak";
-    }
-
-    private static string GetActiveBadgeClass(bool isActive)
-    {
-        return isActive
-            ? "admin-badge admin-badge-success"
-            : "admin-badge admin-badge-muted";
-    }
-
-    private static string GetPublishedBadgeClass(bool isPublished)
-    {
-        return isPublished
-            ? "admin-badge admin-badge-info"
-            : "admin-badge admin-badge-muted";
+        return new AdminCafeResponse
+        {
+            Id = _cafe.Id,
+            Name = CurrentName,
+            Slug = CurrentSlug,
+            LogoImageUrl = _cafe.LogoImageUrl,
+            IsActive = _settings?.IsActive ?? _cafe.IsActive,
+            IsPublished = _settings?.IsPublished ?? _cafe.IsPublished,
+            RoleCodes = _cafe.RoleCodes
+        };
     }
 }

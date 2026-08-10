@@ -8,15 +8,6 @@
 <PageTitle>Ürünler</PageTitle>
 
 <section class="admin-page admin-product-page">
-    <nav class="admin-breadcrumb" aria-label="Admin navigation">
-        <a href="/admin">Cafe listesi</a>
-        @if (_cafe is not null)
-        {
-            <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
-        }
-    </nav>
-
     @if (_isLoading)
     {
         <section class="admin-state" aria-live="polite">
@@ -40,17 +31,11 @@
     }
     else
     {
-        <header class="admin-page-header">
-            <div>
-                <p class="admin-kicker">Ürün Yönetimi</p>
-                <h1>@_cafe.Name</h1>
-                <p class="admin-page-summary">Ürünleri oluşturun, düzenleyin, görünürlük ve stok durumunu yönetin.</p>
-            </div>
-            <div class="admin-header-meta">
-                <span class="@GetActiveBadgeClass(_cafe.IsActive)">@GetActiveLabel(_cafe.IsActive)</span>
-                <span class="@GetPublishedBadgeClass(_cafe.IsPublished)">@GetPublishedLabel(_cafe.IsPublished)</span>
-            </div>
-        </header>
+        <AdminCafeHeader
+            Cafe="_cafe"
+            ActiveSection="AdminCafeSection.Products"
+            Kicker="Ürün Yönetimi"
+            Summary="Ürünleri oluşturun, düzenleyin, görünürlük ve stok durumunu yönetin." />
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
         {
@@ -760,11 +745,6 @@
         return string.Create(TurkishCulture, $"{price:N2} ₺");
     }
 
-    private static string GetActiveLabel(bool isActive)
-    {
-        return isActive ? "Aktif" : "Pasif";
-    }
-
     private static string GetPublishedLabel(bool isPublished)
     {
         return isPublished ? "Yayında" : "Taslak";
@@ -788,13 +768,6 @@
     private static string GetAvailabilityActionLabel(bool isAvailable)
     {
         return isAvailable ? "Tükendi yap" : "Mevcut yap";
-    }
-
-    private static string GetActiveBadgeClass(bool isActive)
-    {
-        return isActive
-            ? "admin-badge admin-badge-success"
-            : "admin-badge admin-badge-muted";
     }
 
     private static string GetPublishedBadgeClass(bool isPublished)

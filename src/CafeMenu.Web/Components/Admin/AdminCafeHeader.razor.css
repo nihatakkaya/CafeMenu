@@ -1,0 +1,161 @@
+.admin-cafe-breadcrumb {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.85rem;
+}
+
+.admin-cafe-breadcrumb a {
+    color: #254e7b;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.admin-cafe-breadcrumb a:hover,
+.admin-cafe-breadcrumb a:focus {
+    text-decoration: underline;
+}
+
+.admin-cafe-breadcrumb span {
+    color: #778494;
+}
+
+.admin-cafe-context {
+    border-bottom: 1px solid #d8dee7;
+    display: grid;
+    gap: 0.85rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 1rem;
+}
+
+.admin-cafe-context-main {
+    min-width: 0;
+}
+
+.admin-kicker {
+    color: #4f6278;
+    font-size: 0.82rem;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+    text-transform: uppercase;
+}
+
+.admin-cafe-context h1 {
+    font-size: 1.65rem;
+    line-height: 1.15;
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.admin-page-summary {
+    color: #526173;
+    margin: 0.5rem 0 0;
+}
+
+.admin-cafe-context-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem 1rem;
+    margin: 0.85rem 0 0;
+}
+
+.admin-cafe-context-details div {
+    min-width: min(100%, 120px);
+}
+
+.admin-cafe-context-details dt {
+    color: #526173;
+    font-size: 0.74rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.admin-cafe-context-details dd {
+    margin: 0.15rem 0 0;
+    overflow-wrap: anywhere;
+}
+
+.admin-cafe-context-status {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.admin-badge {
+    border-radius: 999px;
+    border: 1px solid transparent;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.42rem 0.55rem;
+}
+
+.admin-badge-success {
+    background: #e8f6ee;
+    border-color: #b9e2c9;
+    color: #146c3c;
+}
+
+.admin-badge-info {
+    background: #e9f2ff;
+    border-color: #bdd5f5;
+    color: #184f8f;
+}
+
+.admin-badge-muted {
+    background: #f1f3f6;
+    border-color: #d8dee7;
+    color: #4f6278;
+}
+
+.admin-cafe-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 1rem;
+}
+
+.admin-cafe-nav-link {
+    align-items: center;
+    background: #f1f3f6;
+    border: 1px solid #d8dee7;
+    border-radius: 8px;
+    color: #203247;
+    display: inline-flex;
+    font-weight: 700;
+    min-height: 40px;
+    padding: 0.55rem 0.72rem;
+    text-decoration: none;
+}
+
+.admin-cafe-nav-link:hover,
+.admin-cafe-nav-link:focus {
+    background: #e6ebf2;
+    color: #203247;
+}
+
+.admin-cafe-nav-link-active {
+    background: #203247;
+    border-color: #203247;
+    color: #ffffff;
+}
+
+.admin-cafe-nav-link-active:hover,
+.admin-cafe-nav-link-active:focus {
+    background: #314964;
+    color: #ffffff;
+}
+
+.admin-cafe-nav-link-secondary {
+    background: #ffffff;
+}
+
+@media (min-width: 760px) {
+    .admin-cafe-context {
+        align-items: start;
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+}

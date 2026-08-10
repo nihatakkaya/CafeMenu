@@ -170,14 +170,15 @@ public sealed class AdminCafeSelectionBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Shell Cafe", html, StringComparison.Ordinal);
-        Assert.Contains("Cafe ID: 42", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe ID", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains(">42<", html, StringComparison.Ordinal);
         Assert.Contains("CAFE_MANAGER", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/categories", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/products", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/branding", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/settings", html, StringComparison.Ordinal);
         Assert.Contains("Cafe Ayarları", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
-        Assert.Contains("QR yönetimi sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("QR yönetimi ve dashboard analytics sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
     }
 
     [Fact]

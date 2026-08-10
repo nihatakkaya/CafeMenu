@@ -1,0 +1,108 @@
+@using CafeMenu.Web.AdminCafe
+
+<nav class="admin-cafe-breadcrumb" aria-label="Admin navigation">
+    <a href="/admin">Cafe değiştir</a>
+    <span aria-hidden="true">/</span>
+    <a href="@OverviewUrl">@Cafe.Name</a>
+</nav>
+
+<header class="admin-cafe-context">
+    <div class="admin-cafe-context-main">
+        <p class="admin-kicker">@Kicker</p>
+        <h1>@Cafe.Name</h1>
+        @if (!string.IsNullOrWhiteSpace(Summary))
+        {
+            <p class="admin-page-summary">@Summary</p>
+        }
+        <dl class="admin-cafe-context-details">
+            <div>
+                <dt>Slug</dt>
+                <dd>@Cafe.Slug</dd>
+            </div>
+            <div>
+                <dt>Cafe ID</dt>
+                <dd>@Cafe.Id</dd>
+            </div>
+            <div>
+                <dt>Roller</dt>
+                <dd>@string.Join(", ", Cafe.RoleCodes)</dd>
+            </div>
+        </dl>
+    </div>
+    <div class="admin-cafe-context-status">
+        <span class="@GetActiveBadgeClass(Cafe.IsActive)">@GetActiveLabel(Cafe.IsActive)</span>
+        <span class="@GetPublishedBadgeClass(Cafe.IsPublished)">@GetPublishedLabel(Cafe.IsPublished)</span>
+    </div>
+</header>
+
+<nav class="admin-cafe-nav" aria-label="Cafe yönetim bölümleri">
+    <a class="@GetNavClass(AdminCafeSection.Overview)" href="@OverviewUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Overview)">Genel</a>
+    <a class="@GetNavClass(AdminCafeSection.Settings)" href="@SettingsUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Settings)">Cafe Ayarları</a>
+    <a class="@GetNavClass(AdminCafeSection.Categories)" href="@CategoriesUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Categories)">Kategoriler</a>
+    <a class="@GetNavClass(AdminCafeSection.Products)" href="@ProductsUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Products)">Ürünler</a>
+    <a class="@GetNavClass(AdminCafeSection.Branding)" href="@BrandingUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Branding)">Görünüm</a>
+    <a class="admin-cafe-nav-link" href="@PublicMenuUrl" target="_blank" rel="noopener noreferrer">Public Menü</a>
+    <a class="admin-cafe-nav-link admin-cafe-nav-link-secondary" href="/admin">Cafe değiştir</a>
+</nav>
+
+@code {
+    [Parameter, EditorRequired]
+    public AdminCafeResponse Cafe { get; set; } = new();
+
+    [Parameter, EditorRequired]
+    public AdminCafeSection ActiveSection { get; set; }
+
+    [Parameter]
+    public string Kicker { get; set; } = "Cafe Admin";
+
+    [Parameter]
+    public string? Summary { get; set; }
+
+    private string OverviewUrl => $"/admin/cafes/{Cafe.Id}";
+
+    private string SettingsUrl => $"/admin/cafes/{Cafe.Id}/settings";
+
+    private string CategoriesUrl => $"/admin/cafes/{Cafe.Id}/categories";
+
+    private string ProductsUrl => $"/admin/cafes/{Cafe.Id}/products";
+
+    private string BrandingUrl => $"/admin/cafes/{Cafe.Id}/branding";
+
+    private string PublicMenuUrl => $"/c/{Cafe.Slug}";
+
+    private string GetNavClass(AdminCafeSection section)
+    {
+        return section == ActiveSection
+            ? "admin-cafe-nav-link admin-cafe-nav-link-active"
+            : "admin-cafe-nav-link";
+    }
+
+    private string? GetAriaCurrent(AdminCafeSection section)
+    {
+        return section == ActiveSection ? "page" : null;
+    }
+
+    private static string GetActiveLabel(bool isActive)
+    {
+        return isActive ? "Aktif" : "Pasif";
+    }
+
+    private static string GetPublishedLabel(bool isPublished)
+    {
+        return isPublished ? "Yayında" : "Taslak";
+    }
+
+    private static string GetActiveBadgeClass(bool isActive)
+    {
+        return isActive
+            ? "admin-badge admin-badge-success"
+            : "admin-badge admin-badge-muted";
+    }
+
+    private static string GetPublishedBadgeClass(bool isPublished)
+    {
+        return isPublished
+            ? "admin-badge admin-badge-info"
+            : "admin-badge admin-badge-muted";
+    }
+}

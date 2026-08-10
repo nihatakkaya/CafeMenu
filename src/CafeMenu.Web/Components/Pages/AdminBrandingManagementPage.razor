@@ -7,17 +7,6 @@
 <PageTitle>Görünüm</PageTitle>
 
 <section class="admin-page admin-branding-page">
-    <nav class="admin-breadcrumb" aria-label="Admin navigation">
-        <a href="/admin">Cafe listesi</a>
-        @if (_cafe is not null)
-        {
-            <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
-            <a href="@($"/admin/cafes/{_cafe.Id}/products")">Ürünler</a>
-            <a href="@($"/c/{_cafe.Slug}")" target="_blank" rel="noopener noreferrer">Public menü</a>
-        }
-    </nav>
-
     @if (_isLoading)
     {
         <section class="admin-state" aria-live="polite">
@@ -41,17 +30,11 @@
     }
     else
     {
-        <header class="admin-page-header">
-            <div>
-                <p class="admin-kicker">Görünüm Ayarları</p>
-                <h1>@_cafe.Name</h1>
-                <p class="admin-page-summary">QR menünün kontrollü tema, renk ve karşılama metinlerini yönetin.</p>
-            </div>
-            <div class="admin-header-meta">
-                <span class="@GetActiveBadgeClass(_cafe.IsActive)">@GetActiveLabel(_cafe.IsActive)</span>
-                <span class="@GetPublishedBadgeClass(_cafe.IsPublished)">@GetPublishedLabel(_cafe.IsPublished)</span>
-            </div>
-        </header>
+        <AdminCafeHeader
+            Cafe="_cafe"
+            ActiveSection="AdminCafeSection.Branding"
+            Kicker="Görünüm Ayarları"
+            Summary="QR menünün kontrollü tema, renk ve karşılama metinlerini yönetin." />
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
         {
@@ -392,27 +375,4 @@
         return $"admin-branding-preview {themeClass} {fontClass}";
     }
 
-    private static string GetActiveLabel(bool isActive)
-    {
-        return isActive ? "Aktif" : "Pasif";
-    }
-
-    private static string GetPublishedLabel(bool isPublished)
-    {
-        return isPublished ? "Yayında" : "Taslak";
-    }
-
-    private static string GetActiveBadgeClass(bool isActive)
-    {
-        return isActive
-            ? "admin-badge admin-badge-success"
-            : "admin-badge admin-badge-muted";
-    }
-
-    private static string GetPublishedBadgeClass(bool isPublished)
-    {
-        return isPublished
-            ? "admin-badge admin-badge-info"
-            : "admin-badge admin-badge-muted";
-    }
 }
