@@ -45,6 +45,7 @@
         <section class="admin-shell-panel">
             <nav class="admin-shell-actions" aria-label="Cafe yönetim alanları">
                 <a class="admin-shell-action-link" href="@($"/admin/cafes/{_cafe.Id}/categories")">Kategoriler</a>
+                <a class="admin-shell-action-link" href="@($"/admin/cafes/{_cafe.Id}/products")">Ürünler</a>
             </nav>
 
             <dl>
@@ -58,7 +59,7 @@
                 </div>
             </dl>
 
-            <p>Kategori, ürün ve görünüm yönetimi sonraki fazlarda eklenecek.</p>
+            <p>Görünüm yönetimi sonraki fazlarda eklenecek.</p>
             <p class="admin-security-note">Bu ekran route bilgisini yalnız seçim bağlamı olarak kullanır. Gerçek yetkilendirme her backend API çağrısında tekrar yapılacaktır.</p>
         </section>
     }

@@ -172,7 +172,9 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("Shell Cafe", html, StringComparison.Ordinal);
         Assert.Contains("Cafe ID: 42", html, StringComparison.Ordinal);
         Assert.Contains("CAFE_MANAGER", html, StringComparison.Ordinal);
-        Assert.Contains("Kategori, ürün ve görünüm yönetimi sonraki fazlarda eklenecek", html, StringComparison.Ordinal);
+        Assert.Contains("/admin/cafes/42/categories", html, StringComparison.Ordinal);
+        Assert.Contains("/admin/cafes/42/products", html, StringComparison.Ordinal);
+        Assert.Contains("Görünüm yönetimi sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
     }
 
     [Fact]
