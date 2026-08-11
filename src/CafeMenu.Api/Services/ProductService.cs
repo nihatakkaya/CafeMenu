@@ -176,6 +176,25 @@ public sealed class ProductService : IProductService
         return _productMapper.ToResponse(product);
     }
 
+    public async Task<ProductResponseDto> ChangeProductPublicationAsync(
+        long appUserId,
+        long productId,
+        ChangeProductPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var product = await GetProductOrThrowAsync(productId, cancellationToken);
+        EnsureProductBelongsToCafe(product, request.CafeId);
+        await EnsureCafeProductManagementAccessAsync(appUserId, product.CafeId, cancellationToken);
+
+        product.IsPublished = request.IsPublished;
+        product.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Product {ProductId} publication changed for cafe {CafeId}", product.Id, product.CafeId);
+
+        return _productMapper.ToResponse(product);
+    }
+
     public async Task<IReadOnlyCollection<ProductResponseDto>> ReorderProductsAsync(
         long appUserId,
         ReorderProductsRequest request,

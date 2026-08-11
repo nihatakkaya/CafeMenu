@@ -101,6 +101,18 @@ public sealed class AdminProductApiClient : IAdminProductApiClient
             cancellationToken);
     }
 
+    public Task<AdminProductMutationResult> ChangeProductPublicationAsync(
+        long productId,
+        AdminChangeProductPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        return SendMutationAsync(
+            $"Product/ChangeProductPublication/{productId}",
+            request,
+            HttpMethod.Put,
+            cancellationToken);
+    }
+
     public async Task<AdminProductListResult> ReorderProductsAsync(
         AdminReorderProductsRequest request,
         CancellationToken cancellationToken)

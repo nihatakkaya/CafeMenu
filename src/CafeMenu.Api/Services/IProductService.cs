@@ -35,6 +35,12 @@ public interface IProductService
         ChangeProductAvailabilityRequest request,
         CancellationToken cancellationToken);
 
+    Task<ProductResponseDto> ChangeProductPublicationAsync(
+        long appUserId,
+        long productId,
+        ChangeProductPublicationRequest request,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<ProductResponseDto>> ReorderProductsAsync(
         long appUserId,
         ReorderProductsRequest request,

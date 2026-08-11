@@ -54,10 +54,32 @@ public sealed class AdminCafeSettingsApiClient : IAdminCafeSettingsApiClient
         AdminUpdateCafeSettingsRequest request,
         CancellationToken cancellationToken)
     {
+        return await SendMutationAsync(
+            $"Cafe/UpdateCafe/{cafeId}",
+            request,
+            cancellationToken);
+    }
+
+    public async Task<AdminCafeSettingsRequestResult> ChangeCafePublicationAsync(
+        long cafeId,
+        AdminChangeCafePublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await SendMutationAsync(
+            $"Cafe/ChangeCafePublication/{cafeId}",
+            request,
+            cancellationToken);
+    }
+
+    private async Task<AdminCafeSettingsRequestResult> SendMutationAsync<TRequest>(
+        string requestUri,
+        TRequest request,
+        CancellationToken cancellationToken)
+    {
         try
         {
             using var response = await _httpClient.PutAsJsonAsync(
-                $"Cafe/UpdateCafe/{cafeId}",
+                requestUri,
                 request,
                 JsonOptions,
                 cancellationToken);

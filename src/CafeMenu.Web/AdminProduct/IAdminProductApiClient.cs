@@ -25,6 +25,11 @@ public interface IAdminProductApiClient
         AdminChangeProductAvailabilityRequest request,
         CancellationToken cancellationToken);
 
+    Task<AdminProductMutationResult> ChangeProductPublicationAsync(
+        long productId,
+        AdminChangeProductPublicationRequest request,
+        CancellationToken cancellationToken);
+
     Task<AdminProductListResult> ReorderProductsAsync(
         AdminReorderProductsRequest request,
         CancellationToken cancellationToken);

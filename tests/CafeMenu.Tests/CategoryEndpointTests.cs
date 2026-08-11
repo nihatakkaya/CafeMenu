@@ -183,6 +183,70 @@ public sealed class CategoryEndpointTests
     }
 
     [Fact]
+    public async Task ChangeCategoryPublication_ShouldPublishAndUnpublishCategory()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var manager = await SeedUserAsync(factory, "category-publication@example.com");
+        var cafe = await SeedCafeAsync(factory, "Publication Cafe", "publication-cafe");
+        await SeedMembershipAsync(factory, manager.Id, cafe.Id, ApplicationRoles.CafeManager);
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Publication Category", 1);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, manager.Email);
+
+        using var publishResponse = await client.PutAsJsonAsync(
+            $"/Category/ChangeCategoryPublication/{category.Id}",
+            new ChangeCategoryPublicationRequest { CafeId = cafe.Id, IsPublished = true });
+        var publishJson = await ParseAsync(publishResponse);
+
+        using var unpublishResponse = await client.PutAsJsonAsync(
+            $"/Category/ChangeCategoryPublication/{category.Id}",
+            new ChangeCategoryPublicationRequest { CafeId = cafe.Id, IsPublished = false });
+        var unpublishJson = await ParseAsync(unpublishResponse);
+
+        Assert.Equal(HttpStatusCode.OK, publishResponse.StatusCode);
+        Assert.True(publishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, unpublishResponse.StatusCode);
+        Assert.False(unpublishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ChangeCategoryPublication_ShouldRejectCafeIdBypass()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "category-publication-bypass@example.com");
+        var cafeA = await SeedCafeAsync(factory, "Publication Bypass Cafe A", "publication-bypass-cafe-a");
+        var cafeB = await SeedCafeAsync(factory, "Publication Bypass Cafe B", "publication-bypass-cafe-b");
+        await SeedMembershipAsync(factory, owner.Id, cafeA.Id, ApplicationRoles.CafeOwner);
+        var categoryB = await SeedCategoryAsync(factory, cafeB.Id, "Blocked Publication", 1);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Category/ChangeCategoryPublication/{categoryB.Id}",
+            new ChangeCategoryPublicationRequest { CafeId = cafeA.Id, IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeCategoryPublication_ShouldNotPublishSoftDeletedCategory()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "category-publication-deleted@example.com");
+        var cafe = await SeedCafeAsync(factory, "Deleted Publication Cafe", "deleted-publication-cafe");
+        await SeedMembershipAsync(factory, owner.Id, cafe.Id, ApplicationRoles.CafeOwner);
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Deleted Publication Category", 1, isDeleted: true);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Category/ChangeCategoryPublication/{category.Id}",
+            new ChangeCategoryPublicationRequest { CafeId = cafe.Id, IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ReorderCategories_ShouldUpdateOnlySameCafeCategories()
     {
         await using var factory = new CustomWebApplicationFactory();
@@ -327,7 +391,8 @@ public sealed class CategoryEndpointTests
         CustomWebApplicationFactory factory,
         long cafeId,
         string name,
-        int displayOrder)
+        int displayOrder,
+        bool isDeleted = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CafeMenuDbContext>();
@@ -339,6 +404,8 @@ public sealed class CategoryEndpointTests
             DisplayOrder = displayOrder,
             IsVisible = true,
             IsPublished = false,
+            IsDeleted = isDeleted,
+            DeletedAt = isDeleted ? utcNow : null,
             CreatedAt = utcNow,
             UpdatedAt = utcNow
         };

@@ -89,6 +89,18 @@ public sealed class AdminCategoryApiClient : IAdminCategoryApiClient
             cancellationToken);
     }
 
+    public Task<AdminCategoryMutationResult> ChangeCategoryPublicationAsync(
+        long categoryId,
+        AdminChangeCategoryPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        return SendMutationAsync(
+            $"Category/ChangeCategoryPublication/{categoryId}",
+            request,
+            HttpMethod.Put,
+            cancellationToken);
+    }
+
     public async Task<AdminCategoryListResult> ReorderCategoriesAsync(
         AdminReorderCategoriesRequest request,
         CancellationToken cancellationToken)

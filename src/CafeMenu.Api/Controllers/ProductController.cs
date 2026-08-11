@@ -119,6 +119,21 @@ public sealed class ProductController : ControllerBase
         return Ok(ApiResponse<ProductResponseDto>.SuccessResponse(response, "Product availability changed successfully."));
     }
 
+    [HttpPut("ChangeProductPublication/{id:long}")]
+    [ProducesResponseType(typeof(ApiResponse<ProductResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<ProductResponseDto>>> ChangeProductPublication(
+        long id,
+        [FromBody] ChangeProductPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _productService.ChangeProductPublicationAsync(GetCurrentAppUserId(), id, request, cancellationToken);
+        return Ok(ApiResponse<ProductResponseDto>.SuccessResponse(response, "Product publication changed successfully."));
+    }
+
     [HttpPut("ReorderProducts")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<ProductResponseDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

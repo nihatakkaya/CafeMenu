@@ -108,13 +108,22 @@
                             <dd><a href="@($"/c/{CurrentSlug}")" target="_blank" rel="noopener noreferrer">/c/@CurrentSlug</a></dd>
                         </div>
                     </dl>
+                    @if (CanAttemptUpdate)
+                    {
+                        <EditForm Model="_publicationActionModel" OnSubmit="ChangePublicationAsync" FormName="ChangeCafePublicationForm" method="post">
+                            <input type="hidden" name="_publicationActionModel.IsPublished" value="@GetOppositePublicationValue(CurrentIsPublished)" />
+                            <button class="admin-secondary-button" type="submit" disabled="@_isSaving">
+                                @GetPublicationActionLabel(CurrentIsPublished)
+                            </button>
+                        </EditForm>
+                    }
                     <p class="admin-security-note">Route üzerindeki cafe id yalnız seçim bağlamıdır. Gerçek tenant authorization her backend çağrısında tekrar uygulanır.</p>
                 </aside>
             </div>
 
             <section class="admin-panel admin-contract-note">
                 <h2>Bu fazda düzenlenmeyen alanlar</h2>
-                <p>Logo ve kapak görseli mevcut branding sözleşmesi üzerinden yönetilir. Aktif/pasif ve yayın durumu için bu fazda fake toggle oluşturulmadı.</p>
+                <p>Logo ve kapak görseli mevcut branding sözleşmesi üzerinden yönetilir. Aktif/pasif durum için bu fazda fake toggle oluşturulmadı.</p>
             </section>
         }
     }
@@ -133,15 +142,21 @@
     private AdminCafeResponse? _cafe;
     private AdminCafeSettingsResponse? _settings;
     private AdminCafeSettingsFormModel _formModel = new();
+    private AdminCafePublicationActionFormModel _publicationActionModel = new();
 
     [SupplyParameterFromForm(FormName = "UpdateCafeSettingsForm", Name = "_formModel")]
     private AdminCafeSettingsFormModel? SettingsFormModel { get; set; }
+
+    [SupplyParameterFromForm(FormName = "ChangeCafePublicationForm", Name = "_publicationActionModel")]
+    private AdminCafePublicationActionFormModel? PublicationActionFormModel { get; set; }
 
     private string CurrentSettingsRoute => $"/admin/cafes/{CafeId}/settings";
 
     private string CurrentName => _settings?.Name ?? _cafe?.Name ?? string.Empty;
 
     private string CurrentSlug => _settings?.Slug ?? _cafe?.Slug ?? string.Empty;
+
+    private bool CurrentIsPublished => _settings?.IsPublished ?? _cafe?.IsPublished ?? false;
 
     private bool CanAttemptUpdate => _cafe is not null &&
         (_cafe.RoleCodes.Contains("PLATFORM_ADMIN", StringComparer.Ordinal) ||
@@ -151,6 +166,7 @@
     {
         ResetPageState();
         _formModel = SettingsFormModel ?? new AdminCafeSettingsFormModel();
+        _publicationActionModel = PublicationActionFormModel ?? new AdminCafePublicationActionFormModel();
 
         var cafeResult = await AdminCafeApiClient.GetMyCafesAsync(CancellationToken.None);
         if (cafeResult.Status == AdminCafeListStatus.Failure)
@@ -236,6 +252,38 @@
         }
     }
 
+    private async Task ChangePublicationAsync()
+    {
+        if (_cafe is null || !CanAttemptUpdate)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        ClearMessage();
+
+        try
+        {
+            var result = await AdminCafeSettingsApiClient.ChangeCafePublicationAsync(
+                _cafe.Id,
+                new AdminChangeCafePublicationRequest(_publicationActionModel.IsPublished),
+                CancellationToken.None);
+
+            if (result.Status == AdminCafeSettingsRequestStatus.Success && result.Settings is not null)
+            {
+                _settings = result.Settings;
+                SetSuccessMessage(GetPublicationSuccessMessage(result.Settings.IsPublished));
+                return;
+            }
+
+            SetErrorMessage("Cafe yayin durumu guncellenemedi.");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
     private void ResetPageState()
     {
         _isLoading = true;
@@ -287,5 +335,20 @@
             IsPublished = _settings?.IsPublished ?? _cafe.IsPublished,
             RoleCodes = _cafe.RoleCodes
         };
+    }
+
+    private static string GetPublicationActionLabel(bool isPublished)
+    {
+        return isPublished ? "Yayindan kaldir" : "Yayinla";
+    }
+
+    private static string GetOppositePublicationValue(bool isPublished)
+    {
+        return isPublished ? "false" : "true";
+    }
+
+    private static string GetPublicationSuccessMessage(bool isPublished)
+    {
+        return isPublished ? "Cafe yayina alindi." : "Cafe yayindan kaldirildi.";
     }
 }

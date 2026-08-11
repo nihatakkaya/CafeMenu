@@ -87,6 +87,8 @@ public sealed record AdminUpdateCategoryRequest(
 
 public sealed record AdminChangeCategoryVisibilityRequest(long CafeId, bool IsVisible);
 
+public sealed record AdminChangeCategoryPublicationRequest(long CafeId, bool IsPublished);
+
 public sealed record AdminReorderCategoriesRequest(long CafeId, IReadOnlyCollection<AdminCategoryOrderRequest> Categories);
 
 public sealed record AdminCategoryOrderRequest(long CategoryId, int DisplayOrder);

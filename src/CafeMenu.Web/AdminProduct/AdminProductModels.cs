@@ -116,6 +116,8 @@ public sealed record AdminChangeProductVisibilityRequest(long CafeId, bool IsVis
 
 public sealed record AdminChangeProductAvailabilityRequest(long CafeId, bool IsAvailable);
 
+public sealed record AdminChangeProductPublicationRequest(long CafeId, bool IsPublished);
+
 public sealed record AdminReorderProductsRequest(long CafeId, long CategoryId, IReadOnlyCollection<AdminProductOrderRequest> Products);
 
 public sealed record AdminProductOrderRequest(long ProductId, int DisplayOrder);

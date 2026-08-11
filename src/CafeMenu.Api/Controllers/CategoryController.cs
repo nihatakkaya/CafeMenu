@@ -103,6 +103,21 @@ public sealed class CategoryController : ControllerBase
         return Ok(ApiResponse<CategoryResponseDto>.SuccessResponse(response, "Category visibility changed successfully."));
     }
 
+    [HttpPut("ChangeCategoryPublication/{id:long}")]
+    [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CategoryResponseDto>>> ChangeCategoryPublication(
+        long id,
+        [FromBody] ChangeCategoryPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _categoryService.ChangeCategoryPublicationAsync(GetCurrentAppUserId(), id, request, cancellationToken);
+        return Ok(ApiResponse<CategoryResponseDto>.SuccessResponse(response, "Category publication changed successfully."));
+    }
+
     [HttpPut("ReorderCategories")]
     [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<CategoryResponseDto>>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

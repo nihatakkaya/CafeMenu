@@ -10,4 +10,9 @@ public interface IAdminCafeSettingsApiClient
         long cafeId,
         AdminUpdateCafeSettingsRequest request,
         CancellationToken cancellationToken);
+
+    Task<AdminCafeSettingsRequestResult> ChangeCafePublicationAsync(
+        long cafeId,
+        AdminChangeCafePublicationRequest request,
+        CancellationToken cancellationToken);
 }

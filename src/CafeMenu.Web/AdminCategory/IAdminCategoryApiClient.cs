@@ -20,6 +20,11 @@ public interface IAdminCategoryApiClient
         AdminChangeCategoryVisibilityRequest request,
         CancellationToken cancellationToken);
 
+    Task<AdminCategoryMutationResult> ChangeCategoryPublicationAsync(
+        long categoryId,
+        AdminChangeCategoryPublicationRequest request,
+        CancellationToken cancellationToken);
+
     Task<AdminCategoryListResult> ReorderCategoriesAsync(
         AdminReorderCategoriesRequest request,
         CancellationToken cancellationToken);

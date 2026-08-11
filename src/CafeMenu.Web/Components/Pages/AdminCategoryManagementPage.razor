@@ -169,6 +169,7 @@
                                     <div class="admin-actions">
                                         <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildCategoryAction("Edit", category.Id)" disabled="@_isMutating">Düzenle</button>
                                         <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildVisibilityAction(category)" disabled="@_isMutating">@GetVisibilityActionLabel(category.IsVisible)</button>
+                                        <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildPublicationAction(category)" disabled="@_isMutating">@GetPublicationActionLabel(category.IsPublished)</button>
                                         <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildMoveAction(category, -1)" disabled="@IsMoveUpDisabled(category)">Yukarı</button>
                                         <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildMoveAction(category, 1)" disabled="@IsMoveDownDisabled(category)">Aşağı</button>
                                         <button class="admin-danger-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildCategoryAction("ConfirmDelete", category.Id)" disabled="@_isMutating">Sil</button>
@@ -379,6 +380,9 @@
             case "Visibility" when parts.Length == 3 && bool.TryParse(parts[2], out var isVisible):
                 await ChangeVisibilityAsync(category, isVisible);
                 break;
+            case "Publication" when parts.Length == 3 && bool.TryParse(parts[2], out var isPublished):
+                await ChangePublicationAsync(category, isPublished);
+                break;
             case "Move" when parts.Length == 3 && int.TryParse(parts[2], out var direction):
                 await MoveCategoryAsync(category, direction);
                 break;
@@ -407,6 +411,31 @@
             }
 
             SetMutationFailureMessage(result.Status, "Kategori görünürlüğü güncellenemedi.");
+        });
+    }
+
+    private async Task ChangePublicationAsync(AdminCategoryResponse category, bool isPublished)
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            var result = await AdminCategoryApiClient.ChangeCategoryPublicationAsync(
+                category.Id,
+                new AdminChangeCategoryPublicationRequest(_cafe.Id, isPublished),
+                CancellationToken.None);
+
+            if (result.Status == AdminCategoryRequestStatus.Success)
+            {
+                await LoadCategoriesAsync();
+                SetSuccessMessage(GetPublicationSuccessMessage(isPublished));
+                return;
+            }
+
+            SetMutationFailureMessage(result.Status, "Kategori yayın durumu güncellenemedi.");
         });
     }
 
@@ -567,6 +596,11 @@
         return $"Visibility|{category.Id}|{!category.IsVisible}";
     }
 
+    private static string BuildPublicationAction(AdminCategoryResponse category)
+    {
+        return $"Publication|{category.Id}|{!category.IsPublished}";
+    }
+
     private static string BuildMoveAction(AdminCategoryResponse category, int direction)
     {
         return $"Move|{category.Id}|{direction}";
@@ -585,6 +619,16 @@
     private static string GetVisibilityActionLabel(bool isVisible)
     {
         return isVisible ? "Gizle" : "Görünür yap";
+    }
+
+    private static string GetPublicationActionLabel(bool isPublished)
+    {
+        return isPublished ? "Yayından kaldır" : "Yayınla";
+    }
+
+    private static string GetPublicationSuccessMessage(bool isPublished)
+    {
+        return isPublished ? "Kategori yayına alındı." : "Kategori yayından kaldırıldı.";
     }
 
     private static string GetPublishedBadgeClass(bool isPublished)

@@ -140,6 +140,7 @@ public sealed class AdminProductManagementBlazorTests
         Assert.Contains("Düzenle", decodedHtml, StringComparison.Ordinal);
         Assert.Contains("Gizle", decodedHtml, StringComparison.Ordinal);
         Assert.Contains("Mevcut yap", decodedHtml, StringComparison.Ordinal);
+        Assert.Contains("Yay", decodedHtml, StringComparison.Ordinal);
         Assert.Contains(">Sil<", decodedHtml, StringComparison.Ordinal);
         Assert.Contains("Yukarı", decodedHtml, StringComparison.Ordinal);
         Assert.Contains("Aşağı", decodedHtml, StringComparison.Ordinal);
@@ -346,7 +347,7 @@ public sealed class AdminProductManagementBlazorTests
     }
 
     [Fact]
-    public async Task StaticSsrActionForms_ShouldHandleVisibilityAvailabilityDeleteAndReorder()
+    public async Task StaticSsrActionForms_ShouldHandleVisibilityAvailabilityPublicationDeleteAndReorder()
     {
         var products = new[]
         {
@@ -388,6 +389,17 @@ public sealed class AdminProductManagementBlazorTests
         Assert.Equal(22, productClient.LastAvailabilityProductId);
         Assert.NotNull(productClient.LastAvailabilityRequest);
         Assert.True(productClient.LastAvailabilityRequest.IsAvailable);
+
+        var publicationFields = ExtractFormFields(getHtml, "ProductActionForm");
+        SetFormField(publicationFields, "_productActionModel.Action", "Publication|21|true");
+        using var publicationResponse = await client.PostAsync(
+            "/admin/cafes/10/products",
+            new FormUrlEncodedContent(publicationFields));
+        Assert.Equal(HttpStatusCode.OK, publicationResponse.StatusCode);
+        Assert.Equal(21, productClient.LastPublicationProductId);
+        Assert.NotNull(productClient.LastPublicationRequest);
+        Assert.Equal(10, productClient.LastPublicationRequest.CafeId);
+        Assert.True(productClient.LastPublicationRequest.IsPublished);
 
         var confirmDeleteFields = ExtractFormFields(getHtml, "ProductActionForm");
         SetFormField(confirmDeleteFields, "_productActionModel.Action", "ConfirmDelete|21");
@@ -531,6 +543,27 @@ public sealed class AdminProductManagementBlazorTests
                 "description": null,
                 "price": 35,
                 "imageUrl": null,
+                "isAvailable": false,
+                "isVisible": false,
+                "isPublished": true,
+                "displayOrder": 2,
+                "createdAt": "2026-08-10T00:00:00+00:00",
+                "updatedAt": "2026-08-10T00:00:00+00:00"
+              }
+            }
+            """),
+            JsonResponse("""
+            {
+              "success": true,
+              "message": "ok",
+              "data": {
+                "id": 2,
+                "cafeId": 10,
+                "categoryId": 20,
+                "name": "Tea Updated",
+                "description": null,
+                "price": 35,
+                "imageUrl": null,
                 "isAvailable": true,
                 "isVisible": true,
                 "isPublished": false,
@@ -635,6 +668,10 @@ public sealed class AdminProductManagementBlazorTests
             2,
             new AdminChangeProductAvailabilityRequest(10, false),
             CancellationToken.None);
+        await apiClient.ChangeProductPublicationAsync(
+            2,
+            new AdminChangeProductPublicationRequest(10, true),
+            CancellationToken.None);
         await apiClient.ReorderProductsAsync(
             new AdminReorderProductsRequest(10, 20, [new AdminProductOrderRequest(2, 0)]),
             CancellationToken.None);
@@ -666,13 +703,22 @@ public sealed class AdminProductManagementBlazorTests
             {
                 Assert.Equal(HttpMethod.Put, request.Method);
                 Assert.Equal("https://api.example.test/Product/ChangeProductVisibility/2", request.Uri);
+                AssertJsonContains(request.Body, "\"cafeId\":10");
                 AssertJsonContains(request.Body, "\"isVisible\":false");
             },
             request =>
             {
                 Assert.Equal(HttpMethod.Put, request.Method);
                 Assert.Equal("https://api.example.test/Product/ChangeProductAvailability/2", request.Uri);
+                AssertJsonContains(request.Body, "\"cafeId\":10");
                 AssertJsonContains(request.Body, "\"isAvailable\":false");
+            },
+            request =>
+            {
+                Assert.Equal(HttpMethod.Put, request.Method);
+                Assert.Equal("https://api.example.test/Product/ChangeProductPublication/2", request.Uri);
+                AssertJsonContains(request.Body, "\"cafeId\":10");
+                AssertJsonContains(request.Body, "\"isPublished\":true");
             },
             request =>
             {
@@ -1014,6 +1060,14 @@ public sealed class AdminProductManagementBlazorTests
             return Task.FromResult(AdminCategoryMutationResult.Failure());
         }
 
+        public Task<AdminCategoryMutationResult> ChangeCategoryPublicationAsync(
+            long categoryId,
+            AdminChangeCategoryPublicationRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCategoryMutationResult.Failure());
+        }
+
         public Task<AdminCategoryListResult> ReorderCategoriesAsync(
             AdminReorderCategoriesRequest request,
             CancellationToken cancellationToken)
@@ -1047,6 +1101,8 @@ public sealed class AdminProductManagementBlazorTests
 
         public long? LastAvailabilityProductId { get; private set; }
 
+        public long? LastPublicationProductId { get; private set; }
+
         public long? LastDeleteProductId { get; private set; }
 
         public AdminCreateProductRequest? LastCreateRequest { get; private set; }
@@ -1056,6 +1112,8 @@ public sealed class AdminProductManagementBlazorTests
         public AdminChangeProductVisibilityRequest? LastVisibilityRequest { get; private set; }
 
         public AdminChangeProductAvailabilityRequest? LastAvailabilityRequest { get; private set; }
+
+        public AdminChangeProductPublicationRequest? LastPublicationRequest { get; private set; }
 
         public AdminReorderProductsRequest? LastReorderRequest { get; private set; }
 
@@ -1111,6 +1169,16 @@ public sealed class AdminProductManagementBlazorTests
             LastAvailabilityProductId = productId;
             LastAvailabilityRequest = request;
             return Task.FromResult(AdminProductMutationResult.Success(CreateProduct(id: productId, isAvailable: request.IsAvailable)));
+        }
+
+        public Task<AdminProductMutationResult> ChangeProductPublicationAsync(
+            long productId,
+            AdminChangeProductPublicationRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastPublicationProductId = productId;
+            LastPublicationRequest = request;
+            return Task.FromResult(AdminProductMutationResult.Success(CreateProduct(id: productId, isPublished: request.IsPublished)));
         }
 
         public Task<AdminProductListResult> ReorderProductsAsync(

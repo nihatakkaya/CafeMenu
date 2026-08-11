@@ -15,6 +15,12 @@ public interface ICafeService
 
     Task<CafeResponseDto> UpdateCafeAsync(long appUserId, long cafeId, UpdateCafeRequest request, CancellationToken cancellationToken);
 
+    Task<CafeResponseDto> ChangeCafePublicationAsync(
+        long appUserId,
+        long cafeId,
+        ChangeCafePublicationRequest request,
+        CancellationToken cancellationToken);
+
     Task<CafeResponseDto> ActivateCafeAsync(long cafeId, CancellationToken cancellationToken);
 
     Task<CafeResponseDto> DeactivateCafeAsync(long cafeId, CancellationToken cancellationToken);

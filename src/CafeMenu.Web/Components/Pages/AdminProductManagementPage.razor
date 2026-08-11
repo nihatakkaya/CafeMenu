@@ -231,6 +231,7 @@
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildProductAction("Edit", product.Id)" disabled="@_isMutating">Düzenle</button>
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildVisibilityAction(product)" disabled="@_isMutating">@GetVisibilityActionLabel(product.IsVisible)</button>
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildAvailabilityAction(product)" disabled="@_isMutating">@GetAvailabilityActionLabel(product.IsAvailable)</button>
+                                                    <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildPublicationAction(product)" disabled="@_isMutating">@GetPublicationActionLabel(product.IsPublished)</button>
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildMoveAction(product, -1)" disabled="@IsMoveUpDisabled(product)">Yukarı</button>
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildMoveAction(product, 1)" disabled="@IsMoveDownDisabled(product)">Aşağı</button>
                                                     <button class="admin-danger-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildProductAction("ConfirmDelete", product.Id)" disabled="@_isMutating">Sil</button>
@@ -480,6 +481,9 @@
             case "Availability" when parts.Length == 3 && bool.TryParse(parts[2], out var isAvailable):
                 await ChangeAvailabilityAsync(product, isAvailable);
                 break;
+            case "Publication" when parts.Length == 3 && bool.TryParse(parts[2], out var isPublished):
+                await ChangePublicationAsync(product, isPublished);
+                break;
             case "Move" when parts.Length == 3 && int.TryParse(parts[2], out var direction):
                 await MoveProductAsync(product, direction);
                 break;
@@ -533,6 +537,31 @@
             }
 
             SetMutationFailureMessage(result.Status, "Ürün stok durumu güncellenemedi.");
+        });
+    }
+
+    private async Task ChangePublicationAsync(AdminProductResponse product, bool isPublished)
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            var result = await AdminProductApiClient.ChangeProductPublicationAsync(
+                product.Id,
+                new AdminChangeProductPublicationRequest(_cafe.Id, isPublished),
+                CancellationToken.None);
+
+            if (result.Status == AdminProductRequestStatus.Success)
+            {
+                await LoadProductsAsync();
+                SetSuccessMessage(GetPublicationSuccessMessage(isPublished));
+                return;
+            }
+
+            SetMutationFailureMessage(result.Status, "Ürün yayın durumu güncellenemedi.");
         });
     }
 
@@ -735,6 +764,11 @@
         return $"Availability|{product.Id}|{!product.IsAvailable}";
     }
 
+    private static string BuildPublicationAction(AdminProductResponse product)
+    {
+        return $"Publication|{product.Id}|{!product.IsPublished}";
+    }
+
     private static string BuildMoveAction(AdminProductResponse product, int direction)
     {
         return $"Move|{product.Id}|{direction}";
@@ -768,6 +802,16 @@
     private static string GetAvailabilityActionLabel(bool isAvailable)
     {
         return isAvailable ? "Tükendi yap" : "Mevcut yap";
+    }
+
+    private static string GetPublicationActionLabel(bool isPublished)
+    {
+        return isPublished ? "Yayından kaldır" : "Yayınla";
+    }
+
+    private static string GetPublicationSuccessMessage(bool isPublished)
+    {
+        return isPublished ? "Ürün yayına alındı." : "Ürün yayından kaldırıldı.";
     }
 
     private static string GetPublishedBadgeClass(bool isPublished)

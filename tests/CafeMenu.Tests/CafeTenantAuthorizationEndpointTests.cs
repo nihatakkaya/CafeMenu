@@ -216,6 +216,66 @@ public sealed class CafeTenantAuthorizationEndpointTests
         Assert.Equal(HttpStatusCode.OK, activateResponse.StatusCode);
     }
 
+    [Fact]
+    public async Task CafeOwner_ShouldPublishAndUnpublishOwnCafe()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "publish-owner@example.com");
+        var cafe = await SeedCafeAsync(factory, "Publish Cafe", "publish-cafe");
+        await SeedMembershipAsync(factory, owner.Id, cafe.Id, ApplicationRoles.CafeOwner);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var publishResponse = await client.PutAsJsonAsync(
+            $"/Cafe/ChangeCafePublication/{cafe.Id}",
+            new ChangeCafePublicationRequest { IsPublished = true });
+        var publishJson = await ParseAsync(publishResponse);
+
+        using var unpublishResponse = await client.PutAsJsonAsync(
+            $"/Cafe/ChangeCafePublication/{cafe.Id}",
+            new ChangeCafePublicationRequest { IsPublished = false });
+        var unpublishJson = await ParseAsync(unpublishResponse);
+
+        Assert.Equal(HttpStatusCode.OK, publishResponse.StatusCode);
+        Assert.True(publishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, unpublishResponse.StatusCode);
+        Assert.False(unpublishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+    }
+
+    [Fact]
+    public async Task CafeOwner_ShouldNotPublishAnotherCafe()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "publish-bypass-owner@example.com");
+        var cafeA = await SeedCafeAsync(factory, "Publish Bypass Cafe A", "publish-bypass-cafe-a");
+        var cafeB = await SeedCafeAsync(factory, "Publish Bypass Cafe B", "publish-bypass-cafe-b");
+        await SeedMembershipAsync(factory, owner.Id, cafeA.Id, ApplicationRoles.CafeOwner);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Cafe/ChangeCafePublication/{cafeB.Id}",
+            new ChangeCafePublicationRequest { IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlatformAdmin_ShouldNotPublishSoftDeletedCafe()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var platformAdmin = await SeedUserAsync(factory, "publish-deleted-admin@example.com", ApplicationRoles.PlatformAdmin);
+        var cafe = await SeedCafeAsync(factory, "Deleted Publish Cafe", "deleted-publish-cafe", isDeleted: true);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, platformAdmin.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Cafe/ChangeCafePublication/{cafe.Id}",
+            new ChangeCafePublicationRequest { IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private static async Task AuthorizeAsync(HttpClient client, string email)
     {
         using var response = await client.PostAsJsonAsync(
@@ -265,7 +325,8 @@ public sealed class CafeTenantAuthorizationEndpointTests
         CustomWebApplicationFactory factory,
         string name,
         string slug,
-        bool isActive = true)
+        bool isActive = true,
+        bool isDeleted = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CafeMenuDbContext>();
@@ -276,6 +337,8 @@ public sealed class CafeTenantAuthorizationEndpointTests
             Slug = slug,
             IsActive = isActive,
             IsPublished = false,
+            IsDeleted = isDeleted,
+            DeletedAt = isDeleted ? utcNow : null,
             CreatedAt = utcNow,
             UpdatedAt = utcNow
         };

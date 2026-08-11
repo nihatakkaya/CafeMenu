@@ -168,6 +168,29 @@ public sealed class CafeService : ICafeService
         return _cafeMapper.ToResponse(cafe);
     }
 
+    public async Task<CafeResponseDto> ChangeCafePublicationAsync(
+        long appUserId,
+        long cafeId,
+        ChangeCafePublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        await _tenantAuthorizationService.EnsureCafeAccessAsync(
+            appUserId,
+            cafeId,
+            CafeOwnerRoles,
+            allowPlatformAdmin: true,
+            cancellationToken);
+
+        var cafe = await GetCafeOrThrowAsync(cafeId, cancellationToken);
+        cafe.IsPublished = request.IsPublished;
+        cafe.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Cafe {CafeId} publication changed", cafe.Id);
+
+        return _cafeMapper.ToResponse(cafe);
+    }
+
     public async Task<CafeResponseDto> ActivateCafeAsync(long cafeId, CancellationToken cancellationToken)
     {
         var cafe = await GetCafeOrThrowAsync(cafeId, cancellationToken);

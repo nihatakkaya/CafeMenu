@@ -308,6 +308,73 @@ public sealed class ProductEndpointTests
     }
 
     [Fact]
+    public async Task ChangeProductPublication_ShouldPublishAndUnpublishProduct()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var manager = await SeedUserAsync(factory, "product-publication@example.com");
+        var cafe = await SeedCafeAsync(factory, "Product Publication Cafe", "product-publication-cafe");
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Product Publication Category", 1);
+        var product = await SeedProductAsync(factory, cafe.Id, category.Id, "Publication Product", 1, 25m);
+        await SeedMembershipAsync(factory, manager.Id, cafe.Id, ApplicationRoles.CafeManager);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, manager.Email);
+
+        using var publishResponse = await client.PutAsJsonAsync(
+            $"/Product/ChangeProductPublication/{product.Id}",
+            new ChangeProductPublicationRequest { CafeId = cafe.Id, IsPublished = true });
+        var publishJson = await ParseAsync(publishResponse);
+
+        using var unpublishResponse = await client.PutAsJsonAsync(
+            $"/Product/ChangeProductPublication/{product.Id}",
+            new ChangeProductPublicationRequest { CafeId = cafe.Id, IsPublished = false });
+        var unpublishJson = await ParseAsync(unpublishResponse);
+
+        Assert.Equal(HttpStatusCode.OK, publishResponse.StatusCode);
+        Assert.True(publishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+        Assert.Equal(HttpStatusCode.OK, unpublishResponse.StatusCode);
+        Assert.False(unpublishJson.RootElement.GetProperty("data").GetProperty("isPublished").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ChangeProductPublication_ShouldRejectCafeIdBypass()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "product-publication-bypass@example.com");
+        var cafeA = await SeedCafeAsync(factory, "Product Publication Bypass Cafe A", "product-publication-bypass-cafe-a");
+        var cafeB = await SeedCafeAsync(factory, "Product Publication Bypass Cafe B", "product-publication-bypass-cafe-b");
+        var categoryB = await SeedCategoryAsync(factory, cafeB.Id, "Blocked Publication Category", 1);
+        var productB = await SeedProductAsync(factory, cafeB.Id, categoryB.Id, "Blocked Publication Product", 1, 25m);
+        await SeedMembershipAsync(factory, owner.Id, cafeA.Id, ApplicationRoles.CafeOwner);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Product/ChangeProductPublication/{productB.Id}",
+            new ChangeProductPublicationRequest { CafeId = cafeA.Id, IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ChangeProductPublication_ShouldNotPublishSoftDeletedProduct()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var owner = await SeedUserAsync(factory, "product-publication-deleted@example.com");
+        var cafe = await SeedCafeAsync(factory, "Deleted Product Publication Cafe", "deleted-product-publication-cafe");
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Deleted Product Publication Category", 1);
+        var product = await SeedProductAsync(factory, cafe.Id, category.Id, "Deleted Publication Product", 1, 25m, isDeleted: true);
+        await SeedMembershipAsync(factory, owner.Id, cafe.Id, ApplicationRoles.CafeOwner);
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, owner.Email);
+
+        using var response = await client.PutAsJsonAsync(
+            $"/Product/ChangeProductPublication/{product.Id}",
+            new ChangeProductPublicationRequest { CafeId = cafe.Id, IsPublished = true });
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
     public async Task ReorderProducts_ShouldUpdateSameCafeCategoryProducts()
     {
         await using var factory = new CustomWebApplicationFactory();
@@ -493,7 +560,8 @@ public sealed class ProductEndpointTests
         long categoryId,
         string name,
         int displayOrder,
-        decimal price)
+        decimal price,
+        bool isDeleted = false)
     {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CafeMenuDbContext>();
@@ -508,6 +576,8 @@ public sealed class ProductEndpointTests
             IsAvailable = true,
             IsVisible = true,
             IsPublished = false,
+            IsDeleted = isDeleted,
+            DeletedAt = isDeleted ? utcNow : null,
             CreatedAt = utcNow,
             UpdatedAt = utcNow
         };

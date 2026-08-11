@@ -123,6 +123,7 @@ public sealed class AdminCategoryManagementBlazorTests
         Assert.Contains("Sıra 3", html, StringComparison.Ordinal);
         Assert.Contains("Düzenle", html, StringComparison.Ordinal);
         Assert.Contains("Gizle", html, StringComparison.Ordinal);
+        Assert.Contains("Yay", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
         Assert.Contains(">Sil<", html, StringComparison.Ordinal);
         Assert.Contains("Yukarı", html, StringComparison.Ordinal);
         Assert.Contains("Aşağı", html, StringComparison.Ordinal);
@@ -288,7 +289,7 @@ public sealed class AdminCategoryManagementBlazorTests
     }
 
     [Fact]
-    public async Task StaticSsrActionForms_ShouldHandleVisibilityDeleteAndReorder()
+    public async Task StaticSsrActionForms_ShouldHandleVisibilityPublicationDeleteAndReorder()
     {
         var categories = new[]
         {
@@ -318,6 +319,17 @@ public sealed class AdminCategoryManagementBlazorTests
         Assert.Equal(21, categoryClient.LastVisibilityCategoryId);
         Assert.NotNull(categoryClient.LastVisibilityRequest);
         Assert.False(categoryClient.LastVisibilityRequest.IsVisible);
+
+        var publicationFields = ExtractFormFields(getHtml, "CategoryActionForm");
+        SetFormField(publicationFields, "_categoryActionModel.Action", "Publication|21|true");
+        using var publicationResponse = await client.PostAsync(
+            "/admin/cafes/10/categories",
+            new FormUrlEncodedContent(publicationFields));
+        Assert.Equal(HttpStatusCode.OK, publicationResponse.StatusCode);
+        Assert.Equal(21, categoryClient.LastPublicationCategoryId);
+        Assert.NotNull(categoryClient.LastPublicationRequest);
+        Assert.Equal(10, categoryClient.LastPublicationRequest.CafeId);
+        Assert.True(categoryClient.LastPublicationRequest.IsPublished);
 
         var confirmDeleteFields = ExtractFormFields(getHtml, "CategoryActionForm");
         SetFormField(confirmDeleteFields, "_categoryActionModel.Action", "ConfirmDelete|21");
@@ -476,6 +488,24 @@ public sealed class AdminCategoryManagementBlazorTests
                 "description": null,
                 "imageUrl": null,
                 "displayOrder": 2,
+                "isVisible": false,
+                "isPublished": true,
+                "createdAt": "2026-08-10T00:00:00+00:00",
+                "updatedAt": "2026-08-10T00:00:00+00:00"
+              }
+            }
+            """),
+            JsonResponse("""
+            {
+              "success": true,
+              "message": "ok",
+              "data": {
+                "id": 2,
+                "cafeId": 10,
+                "name": "Lunch Updated",
+                "description": null,
+                "imageUrl": null,
+                "displayOrder": 2,
                 "isVisible": true,
                 "isPublished": false,
                 "createdAt": "2026-08-10T00:00:00+00:00",
@@ -547,6 +577,10 @@ public sealed class AdminCategoryManagementBlazorTests
             2,
             new AdminChangeCategoryVisibilityRequest(10, false),
             CancellationToken.None);
+        await apiClient.ChangeCategoryPublicationAsync(
+            2,
+            new AdminChangeCategoryPublicationRequest(10, true),
+            CancellationToken.None);
         await apiClient.ReorderCategoriesAsync(
             new AdminReorderCategoriesRequest(10, [new AdminCategoryOrderRequest(2, 0)]),
             CancellationToken.None);
@@ -578,7 +612,15 @@ public sealed class AdminCategoryManagementBlazorTests
             {
                 Assert.Equal(HttpMethod.Put, request.Method);
                 Assert.Equal("https://api.example.test/Category/ChangeCategoryVisibility/2", request.Uri);
+                AssertJsonContains(request.Body, "\"cafeId\":10");
                 AssertJsonContains(request.Body, "\"isVisible\":false");
+            },
+            request =>
+            {
+                Assert.Equal(HttpMethod.Put, request.Method);
+                Assert.Equal("https://api.example.test/Category/ChangeCategoryPublication/2", request.Uri);
+                AssertJsonContains(request.Body, "\"cafeId\":10");
+                AssertJsonContains(request.Body, "\"isPublished\":true");
             },
             request =>
             {
@@ -839,6 +881,8 @@ public sealed class AdminCategoryManagementBlazorTests
 
         public long? LastVisibilityCategoryId { get; private set; }
 
+        public long? LastPublicationCategoryId { get; private set; }
+
         public long? LastDeleteCategoryId { get; private set; }
 
         public AdminCreateCategoryRequest? LastCreateRequest { get; private set; }
@@ -846,6 +890,8 @@ public sealed class AdminCategoryManagementBlazorTests
         public AdminUpdateCategoryRequest? LastUpdateRequest { get; private set; }
 
         public AdminChangeCategoryVisibilityRequest? LastVisibilityRequest { get; private set; }
+
+        public AdminChangeCategoryPublicationRequest? LastPublicationRequest { get; private set; }
 
         public AdminReorderCategoriesRequest? LastReorderRequest { get; private set; }
 
@@ -891,6 +937,16 @@ public sealed class AdminCategoryManagementBlazorTests
             LastVisibilityCategoryId = categoryId;
             LastVisibilityRequest = request;
             return Task.FromResult(AdminCategoryMutationResult.Success(CreateCategory(id: categoryId, isVisible: request.IsVisible)));
+        }
+
+        public Task<AdminCategoryMutationResult> ChangeCategoryPublicationAsync(
+            long categoryId,
+            AdminChangeCategoryPublicationRequest request,
+            CancellationToken cancellationToken)
+        {
+            LastPublicationCategoryId = categoryId;
+            LastPublicationRequest = request;
+            return Task.FromResult(AdminCategoryMutationResult.Success(CreateCategory(id: categoryId, isPublished: request.IsPublished)));
         }
 
         public Task<AdminCategoryListResult> ReorderCategoriesAsync(

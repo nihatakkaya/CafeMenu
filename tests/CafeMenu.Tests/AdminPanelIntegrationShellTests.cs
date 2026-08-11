@@ -387,6 +387,14 @@ public sealed class AdminPanelIntegrationShellTests
             return Task.FromResult(AdminCategoryMutationResult.Failure());
         }
 
+        public Task<AdminCategoryMutationResult> ChangeCategoryPublicationAsync(
+            long categoryId,
+            AdminChangeCategoryPublicationRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCategoryMutationResult.Failure());
+        }
+
         public Task<AdminCategoryListResult> ReorderCategoriesAsync(
             AdminReorderCategoriesRequest request,
             CancellationToken cancellationToken)
@@ -431,6 +439,14 @@ public sealed class AdminPanelIntegrationShellTests
         public Task<AdminProductMutationResult> ChangeProductAvailabilityAsync(
             long productId,
             AdminChangeProductAvailabilityRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminProductMutationResult.Failure());
+        }
+
+        public Task<AdminProductMutationResult> ChangeProductPublicationAsync(
+            long productId,
+            AdminChangeProductPublicationRequest request,
             CancellationToken cancellationToken)
         {
             return Task.FromResult(AdminProductMutationResult.Failure());
@@ -498,6 +514,14 @@ public sealed class AdminPanelIntegrationShellTests
         public Task<AdminCafeSettingsRequestResult> UpdateCafeSettingsAsync(
             long cafeId,
             AdminUpdateCafeSettingsRequest request,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCafeSettingsRequestResult.Failure());
+        }
+
+        public Task<AdminCafeSettingsRequestResult> ChangeCafePublicationAsync(
+            long cafeId,
+            AdminChangeCafePublicationRequest request,
             CancellationToken cancellationToken)
         {
             return Task.FromResult(AdminCafeSettingsRequestResult.Failure());

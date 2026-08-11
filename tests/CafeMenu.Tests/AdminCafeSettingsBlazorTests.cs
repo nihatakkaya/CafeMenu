@@ -151,6 +151,36 @@ public sealed class AdminCafeSettingsBlazorTests
     }
 
     [Fact]
+    public async Task PublicationPost_ShouldBindSubmittedValueAndUseRouteCafeId()
+    {
+        var settingsClient = new FakeAdminCafeSettingsApiClient(AdminCafeSettingsRequestResult.Success(CreateSettings(isPublished: false)));
+        await using var factory = new AdminCafeSettingsWebApplicationFactory(
+            new FakeAdminAuthApiClient(CreateAuthResponse()),
+            new FakeAdminCafeApiClient(AdminCafeListResult.Success([CreateCafe(id: 10, isPublished: false)])),
+            settingsClient);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        await LoginThroughEndpointAsync(client, "/admin/cafes/10/settings");
+        using var getResponse = await client.GetAsync("/admin/cafes/10/settings");
+        var formFields = ExtractFormFields(await getResponse.Content.ReadAsStringAsync(), "ChangeCafePublicationForm");
+
+        using var postResponse = await client.PostAsync(
+            "/admin/cafes/10/settings",
+            new FormUrlEncodedContent(formFields));
+        var postHtml = WebUtility.HtmlDecode(await postResponse.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
+        Assert.Equal(1, settingsClient.ChangePublicationCallCount);
+        Assert.Equal(10, settingsClient.LastPublicationCafeId);
+        Assert.NotNull(settingsClient.LastPublicationRequest);
+        Assert.True(settingsClient.LastPublicationRequest.IsPublished);
+        Assert.Contains("Cafe yayina alindi", postHtml, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task BlankOptionalSlug_ShouldPostNullSlug()
     {
         var settingsClient = new FakeAdminCafeSettingsApiClient(AdminCafeSettingsRequestResult.Success(CreateSettings()));
@@ -255,6 +285,7 @@ public sealed class AdminCafeSettingsBlazorTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Salt okunur", html, StringComparison.Ordinal);
         Assert.DoesNotContain("UpdateCafeSettingsForm", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("ChangeCafePublicationForm", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -323,7 +354,9 @@ public sealed class AdminCafeSettingsBlazorTests
             "AdminCafeSettingsPage.razor"));
 
         Assert.Contains("[SupplyParameterFromForm(FormName = \"UpdateCafeSettingsForm\", Name = \"_formModel\")]", pageSource, StringComparison.Ordinal);
+        Assert.Contains("[SupplyParameterFromForm(FormName = \"ChangeCafePublicationForm\", Name = \"_publicationActionModel\")]", pageSource, StringComparison.Ordinal);
         Assert.Contains("FormName=\"UpdateCafeSettingsForm\"", pageSource, StringComparison.Ordinal);
+        Assert.Contains("FormName=\"ChangeCafePublicationForm\"", pageSource, StringComparison.Ordinal);
         Assert.DoesNotContain("@onclick", pageSource, StringComparison.Ordinal);
         Assert.DoesNotContain("type=\"button\"", pageSource, StringComparison.Ordinal);
         Assert.DoesNotContain("@rendermode", pageSource, StringComparison.Ordinal);
@@ -403,6 +436,21 @@ public sealed class AdminCafeSettingsBlazorTests
                 "updatedAt": "2026-08-10T00:00:00+00:00"
               }
             }
+            """),
+            JsonResponse("""
+            {
+              "success": true,
+              "message": "ok",
+              "data": {
+                "id": 10,
+                "name": "Renamed Cafe",
+                "slug": "renamed-cafe",
+                "isActive": true,
+                "isPublished": true,
+                "createdAt": "2026-08-10T00:00:00+00:00",
+                "updatedAt": "2026-08-10T00:00:00+00:00"
+              }
+            }
             """));
         using var httpClient = new HttpClient(handler)
         {
@@ -415,6 +463,10 @@ public sealed class AdminCafeSettingsBlazorTests
         await apiClient.UpdateCafeSettingsAsync(
             10,
             new AdminUpdateCafeSettingsRequest("Renamed Cafe", "renamed-cafe"),
+            CancellationToken.None);
+        await apiClient.ChangeCafePublicationAsync(
+            10,
+            new AdminChangeCafePublicationRequest(true),
             CancellationToken.None);
 
         Assert.Equal(AdminAuthenticationConstants.AdminApiClientName, httpClientFactory.LastClientName);
@@ -435,6 +487,14 @@ public sealed class AdminCafeSettingsBlazorTests
                 Assert.DoesNotContain("coverImageUrl", request.Body, StringComparison.Ordinal);
                 Assert.DoesNotContain("isActive", request.Body, StringComparison.Ordinal);
                 Assert.DoesNotContain("isPublished", request.Body, StringComparison.Ordinal);
+            },
+            request =>
+            {
+                Assert.Equal(HttpMethod.Put, request.Method);
+                Assert.Equal("https://api.example.test/Cafe/ChangeCafePublication/10", request.Uri);
+                AssertJsonContains(request.Body, "\"isPublished\":true");
+                Assert.DoesNotContain("name", request.Body, StringComparison.Ordinal);
+                Assert.DoesNotContain("slug", request.Body, StringComparison.Ordinal);
             });
     }
 
@@ -660,11 +720,17 @@ public sealed class AdminCafeSettingsBlazorTests
 
         public int UpdateSettingsCallCount { get; private set; }
 
+        public int ChangePublicationCallCount { get; private set; }
+
         public long? LastGetCafeId { get; private set; }
 
         public long? LastUpdateCafeId { get; private set; }
 
+        public long? LastPublicationCafeId { get; private set; }
+
         public AdminUpdateCafeSettingsRequest? LastUpdateRequest { get; private set; }
+
+        public AdminChangeCafePublicationRequest? LastPublicationRequest { get; private set; }
 
         public Task<AdminCafeSettingsRequestResult> GetCafeSettingsAsync(
             long cafeId,
@@ -693,6 +759,20 @@ public sealed class AdminCafeSettingsBlazorTests
             }
 
             return Task.FromResult(UpdateResult);
+        }
+
+        public Task<AdminCafeSettingsRequestResult> ChangeCafePublicationAsync(
+            long cafeId,
+            AdminChangeCafePublicationRequest request,
+            CancellationToken cancellationToken)
+        {
+            ChangePublicationCallCount++;
+            LastPublicationCafeId = cafeId;
+            LastPublicationRequest = request;
+
+            return Task.FromResult(AdminCafeSettingsRequestResult.Success(CreateSettings(
+                id: cafeId,
+                isPublished: request.IsPublished)));
         }
     }
 

@@ -48,3 +48,10 @@ public sealed class AdminCafeSettingsFormModel
 public sealed record AdminUpdateCafeSettingsRequest(
     string Name,
     string? Slug);
+
+public sealed class AdminCafePublicationActionFormModel
+{
+    public bool IsPublished { get; set; }
+}
+
+public sealed record AdminChangeCafePublicationRequest(bool IsPublished);

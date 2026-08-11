@@ -31,6 +31,12 @@ public interface ICategoryService
         ChangeCategoryVisibilityRequest request,
         CancellationToken cancellationToken);
 
+    Task<CategoryResponseDto> ChangeCategoryPublicationAsync(
+        long appUserId,
+        long categoryId,
+        ChangeCategoryPublicationRequest request,
+        CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<CategoryResponseDto>> ReorderCategoriesAsync(
         long appUserId,
         ReorderCategoriesRequest request,

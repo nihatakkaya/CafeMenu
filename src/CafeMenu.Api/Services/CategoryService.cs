@@ -144,6 +144,28 @@ public sealed class CategoryService : ICategoryService
         return _categoryMapper.ToResponse(category);
     }
 
+    public async Task<CategoryResponseDto> ChangeCategoryPublicationAsync(
+        long appUserId,
+        long categoryId,
+        ChangeCategoryPublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var category = await GetCategoryOrThrowAsync(categoryId, cancellationToken);
+        EnsureCategoryBelongsToCafe(category, request.CafeId);
+        await EnsureCafeManagementAccessAsync(appUserId, category.CafeId, cancellationToken);
+
+        category.IsPublished = request.IsPublished;
+        category.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation(
+            "Category {CategoryId} publication changed for cafe {CafeId}",
+            category.Id,
+            category.CafeId);
+
+        return _categoryMapper.ToResponse(category);
+    }
+
     public async Task<IReadOnlyCollection<CategoryResponseDto>> ReorderCategoriesAsync(
         long appUserId,
         ReorderCategoriesRequest request,

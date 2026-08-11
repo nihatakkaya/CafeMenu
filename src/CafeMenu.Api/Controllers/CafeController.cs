@@ -87,6 +87,21 @@ public sealed class CafeController : ControllerBase
         return Ok(ApiResponse<CafeResponseDto>.SuccessResponse(response, "Cafe updated successfully."));
     }
 
+    [HttpPut("ChangeCafePublication/{id:long}")]
+    [ProducesResponseType(typeof(ApiResponse<CafeResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CafeResponseDto>>> ChangeCafePublication(
+        long id,
+        [FromBody] ChangeCafePublicationRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.ChangeCafePublicationAsync(GetCurrentAppUserId(), id, request, cancellationToken);
+        return Ok(ApiResponse<CafeResponseDto>.SuccessResponse(response, "Cafe publication changed successfully."));
+    }
+
     [Authorize(Policy = ApplicationPolicies.PlatformAdministration)]
     [HttpPut("ActivateCafe/{id:long}")]
     [ProducesResponseType(typeof(ApiResponse<CafeResponseDto>), StatusCodes.Status200OK)]
