@@ -16,4 +16,8 @@ public interface IPlatformUserService
     Task<UserSetupResponseDto> ReissueUserSetupAsync(
         long userId,
         CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<PlatformUserSearchResponseDto>> SearchUsersAsync(
+        SearchPlatformUsersRequest request,
+        CancellationToken cancellationToken);
 }

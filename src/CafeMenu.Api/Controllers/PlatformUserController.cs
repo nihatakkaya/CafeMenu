@@ -34,6 +34,20 @@ public sealed class PlatformUserController : ControllerBase
         return Created(string.Empty, ApiResponse<UserSetupResponseDto>.SuccessResponse(response, "User setup created successfully."));
     }
 
+    [Authorize(Policy = ApplicationPolicies.PlatformAdministration)]
+    [HttpGet("SearchUsers")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<PlatformUserSearchResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<PlatformUserSearchResponseDto>>>> SearchUsers(
+        [FromQuery] SearchPlatformUsersRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _platformUserService.SearchUsersAsync(request, cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<PlatformUserSearchResponseDto>>.SuccessResponse(response, "Users retrieved successfully."));
+    }
+
     [AllowAnonymous]
     [HttpPost("CompleteUserSetup")]
     [ProducesResponseType(typeof(ApiResponse<PlatformUserResponseDto>), StatusCodes.Status200OK)]

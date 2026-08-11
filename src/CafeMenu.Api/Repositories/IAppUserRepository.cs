@@ -12,5 +12,10 @@ public interface IAppUserRepository
 
     Task<AppUserEntity?> GetByIdWithRolesAsync(long id, CancellationToken cancellationToken);
 
+    Task<IReadOnlyCollection<AppUserEntity>> SearchForPlatformOnboardingAsync(
+        string query,
+        int pageSize,
+        CancellationToken cancellationToken);
+
     Task AddAsync(AppUserEntity user, CancellationToken cancellationToken);
 }

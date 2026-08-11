@@ -3,6 +3,7 @@ using CafeMenu.Web.AdminBranding;
 using CafeMenu.Web.AdminCafe;
 using CafeMenu.Web.AdminCafeSettings;
 using CafeMenu.Web.AdminCategory;
+using CafeMenu.Web.AdminPlatform;
 using CafeMenu.Web.AdminProduct;
 using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.PublicMenu;
@@ -18,6 +19,7 @@ builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
 builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
+builder.Services.AddScoped<IAdminPlatformApiClient, AdminPlatformApiClient>();
 builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
 builder.Services.AddOptions<PublicMenuApiOptions>()
     .Bind(builder.Configuration.GetSection("PublicApi"))

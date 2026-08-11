@@ -39,6 +39,25 @@ public sealed class AppUserRepository : IAppUserRepository
             .FirstOrDefaultAsync(user => user.Id == id, cancellationToken);
     }
 
+    public async Task<IReadOnlyCollection<AppUserEntity>> SearchForPlatformOnboardingAsync(
+        string query,
+        int pageSize,
+        CancellationToken cancellationToken)
+    {
+        var normalizedQuery = query.Trim().ToLowerInvariant();
+
+        return await _dbContext.AppUsers
+            .AsNoTracking()
+            .Where(user => user.IsActive)
+            .Where(user =>
+                user.Email.ToLower().Contains(normalizedQuery) ||
+                user.FullName.ToLower().Contains(normalizedQuery))
+            .OrderBy(user => user.Email)
+            .ThenBy(user => user.Id)
+            .Take(pageSize)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task AddAsync(AppUserEntity user, CancellationToken cancellationToken)
     {
         await _dbContext.AppUsers.AddAsync(user, cancellationToken);

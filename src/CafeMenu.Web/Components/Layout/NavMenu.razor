@@ -15,6 +15,15 @@
         </div>
         <AuthorizeView>
             <Authorized>
+                <AuthorizeView Roles="PLATFORM_ADMIN">
+                    <Authorized Context="platformAuth">
+                        <div class="nav-item px-3">
+                            <NavLink class="nav-link" href="admin/platform">
+                                Platform Admin
+                            </NavLink>
+                        </div>
+                    </Authorized>
+                </AuthorizeView>
                 <div class="nav-item px-3">
                     <form method="post" action="/account/logout">
                         <AntiforgeryToken />

@@ -1,0 +1,586 @@
+@page "/admin/platform/cafes/{CafeId:long}/members"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IAdminPlatformApiClient AdminPlatformApiClient
+
+<PageTitle>Platform Cafe Uyeleri</PageTitle>
+
+<section class="admin-page admin-platform-page">
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h1>Yukleniyor</h1>
+            <p>Cafe uyeleri hazirlaniyor.</p>
+        </section>
+    }
+    else if (!_isPlatformAdmin)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Erisim yok</h1>
+            <p>Bu alan yalniz platform admin yetkisine sahip kullanicilar icindir.</p>
+        </section>
+    }
+    else if (_cafe is null)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Cafe bulunamadi</h1>
+            <p>Bu cafe platform yonetimi icin erisilebilir degil.</p>
+        </section>
+    }
+    else
+    {
+        <nav class="admin-cafe-breadcrumb" aria-label="Platform admin navigation">
+            <a href="/admin/platform">Platform Admin</a>
+            <span aria-hidden="true">/</span>
+            <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
+            <span aria-hidden="true">/</span>
+            <span>Uyeler</span>
+        </nav>
+
+        <header class="admin-page-header">
+            <p class="admin-kicker">Platform Cafe Uyeleri</p>
+            <h1>@_cafe.Name</h1>
+            <p class="admin-page-summary">Cafe owner ve manager uyeliklerini semantic backend actionlariyla yonetin.</p>
+        </header>
+
+        @if (!string.IsNullOrWhiteSpace(_pageMessage))
+        {
+            <section class="@_pageMessageCssClass" role="status">@_pageMessage</section>
+        }
+
+        @if (_lastSetup is not null)
+        {
+            <section class="admin-panel admin-platform-token-panel" role="status">
+                <h2>Setup token olusturuldu</h2>
+                <p>Bu token yalniz bu basarili response sonrasinda gosterilir. Yenileme sonrasi tekrar gosterilmez.</p>
+                <dl class="admin-platform-token-details">
+                    <div>
+                        <dt>User ID</dt>
+                        <dd>@_lastSetup.UserId</dd>
+                    </div>
+                    <div>
+                        <dt>Email</dt>
+                        <dd>@_lastSetup.Email</dd>
+                    </div>
+                    <div>
+                        <dt>Ad soyad</dt>
+                        <dd>@_lastSetup.FullName</dd>
+                    </div>
+                    <div>
+                        <dt>Expires</dt>
+                        <dd>@_lastSetup.SetupTokenExpiresAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd>
+                    </div>
+                    <div class="admin-platform-token-value">
+                        <dt>Setup token</dt>
+                        <dd><code>@_lastSetup.SetupToken</code></dd>
+                    </div>
+                </dl>
+                <EditForm Model="_setupActionModel" OnSubmit="HandleSetupActionAsync" FormName="PlatformSetupActionForm" id="PlatformSetupActionForm" method="post">
+                    <div class="admin-actions">
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("Reissue", _lastSetup.UserId)" disabled="@_isMutating">Token yeniden uret</button>
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignOwner", _lastSetup.UserId)" disabled="@_isMutating">Owner ata</button>
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignManager", _lastSetup.UserId)" disabled="@_isMutating">Manager ata</button>
+                    </div>
+                </EditForm>
+                <p class="admin-security-note">Token hidden field, cookie veya browser storage icine yazilmaz.</p>
+            </section>
+        }
+
+        <section class="admin-platform-layout">
+            <section class="admin-panel">
+                <h2>Yeni kullanici setup</h2>
+                <EditForm Model="_createUserSetupModel" OnValidSubmit="CreateUserSetupAsync" FormName="CreatePlatformUserSetupForm" id="CreatePlatformUserSetupForm" method="post">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="admin-form-grid">
+                        <label>
+                            Email
+                            <InputText @bind-Value="_createUserSetupModel.Email" maxlength="320" />
+                        </label>
+                        <label>
+                            Ad soyad
+                            <InputText @bind-Value="_createUserSetupModel.FullName" maxlength="200" />
+                        </label>
+                    </div>
+
+                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Setup olustur</button>
+                </EditForm>
+            </section>
+
+            <section class="admin-panel">
+                <h2>Aktif kullanici ara</h2>
+                <EditForm Model="_userSearchModel" OnValidSubmit="SearchUsersAsync" FormName="PlatformUserSearchForm" id="PlatformUserSearchForm" method="post">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="admin-form-grid">
+                        <label>
+                            Email veya ad soyad
+                            <InputText @bind-Value="_userSearchModel.Query" maxlength="320" />
+                        </label>
+                    </div>
+
+                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Kullanici ara</button>
+                </EditForm>
+            </section>
+
+            <section class="admin-panel">
+                <div class="admin-list-header">
+                    <h2>Uyeler</h2>
+                    <a class="admin-secondary-button" href="@CurrentMembersRoute">Yenile</a>
+                </div>
+
+                <EditForm Model="_memberActionModel" OnSubmit="HandleMemberActionAsync" FormName="PlatformMemberActionForm" id="PlatformMemberActionForm" method="post">
+                    @if (_membersLoadFailed)
+                    {
+                        <section class="admin-state admin-state-warning" role="alert">
+                            <h3>Uyeler yuklenemedi</h3>
+                            <p>Bu cafe icin uye listesi su anda alinamiyor.</p>
+                        </section>
+                    }
+                    else if (_members.Count == 0)
+                    {
+                        <section class="admin-state">
+                            <h3>Aktif uye yok</h3>
+                            <p>Bu cafe icin aktif owner veya manager uyeligi bulunmuyor.</p>
+                        </section>
+                    }
+                    else
+                    {
+                        <div class="admin-platform-list">
+                            @foreach (var member in _members)
+                            {
+                                <article class="admin-platform-row">
+                                    <div class="admin-platform-row-main">
+                                        <h3>@member.FullName</h3>
+                                        <p>@member.Email</p>
+                                    </div>
+                                    <div class="admin-cafe-meta">
+                                        <span class="admin-badge admin-badge-role">@member.RoleCode</span>
+                                        <span class="@GetActiveBadgeClass(member.IsActive)">@GetActiveLabel(member.IsActive)</span>
+                                        <span class="admin-badge admin-badge-muted">User @member.AppUserId</span>
+                                    </div>
+                                    <div class="admin-actions">
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("Reissue", member.AppUserId)" disabled="@_isMutating">Reissue</button>
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignOwner", member.AppUserId)" disabled="@_isMutating">Owner ata</button>
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignManager", member.AppUserId)" disabled="@_isMutating">Manager ata</button>
+                                        <button class="admin-danger-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("Deactivate", member.MembershipId)" disabled="@_isMutating">Pasif yap</button>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </EditForm>
+            </section>
+
+            <EditForm Model="_userSearchActionModel" OnSubmit="HandleUserSearchActionAsync" FormName="PlatformUserSearchActionForm" id="PlatformUserSearchActionForm" method="post">
+                @if (_hasSearchedUsers)
+                {
+                    <section class="admin-panel">
+                        <div class="admin-list-header">
+                            <h2>Arama sonuclari</h2>
+                            <span class="admin-badge admin-badge-muted">@_searchedUsers.Count sonuc</span>
+                        </div>
+
+                        @if (_searchedUsers.Count == 0)
+                        {
+                            <section class="admin-state">
+                                <h3>Kullanici bulunamadi</h3>
+                                <p>Arama metniyle eslesen aktif kullanici bulunamadi.</p>
+                            </section>
+                        }
+                        else
+                        {
+                            <div class="admin-platform-list">
+                                @foreach (var user in _searchedUsers)
+                                {
+                                    <article class="admin-platform-row">
+                                        <div class="admin-platform-row-main">
+                                            <h3>@user.FullName</h3>
+                                            <p>@user.Email</p>
+                                        </div>
+                                        <div class="admin-cafe-meta">
+                                            <span class="@GetActiveBadgeClass(user.IsActive)">@GetActiveLabel(user.IsActive)</span>
+                                            <span class="admin-badge admin-badge-muted">User @user.AppUserId</span>
+                                        </div>
+                                        <div class="admin-actions">
+                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignOwner", user.AppUserId)" disabled="@_isMutating">Owner ata</button>
+                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignManager", user.AppUserId)" disabled="@_isMutating">Manager ata</button>
+                                        </div>
+                                    </article>
+                                }
+                            </div>
+                        }
+                    </section>
+                }
+            </EditForm>
+        </section>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public long CafeId { get; set; }
+
+    private bool _isLoading = true;
+    private bool _isPlatformAdmin;
+    private bool _isMutating;
+    private bool _membersLoadFailed;
+    private string? _pageMessage;
+    private string _pageMessageCssClass = "admin-message";
+    private AdminPlatformCafeResponse? _cafe;
+    private IReadOnlyList<AdminPlatformCafeMemberResponse> _members = [];
+    private IReadOnlyList<AdminPlatformUserSearchResponse> _searchedUsers = [];
+    private AdminPlatformUserSetupResponse? _lastSetup;
+    private AdminPlatformCreateUserSetupFormModel _createUserSetupModel = new();
+    private AdminPlatformUserSearchFormModel _userSearchModel = new();
+    private AdminPlatformMemberActionFormModel _setupActionModel = new();
+    private AdminPlatformMemberActionFormModel _memberActionModel = new();
+    private AdminPlatformMemberActionFormModel _userSearchActionModel = new();
+    private bool _hasSearchedUsers;
+
+    [SupplyParameterFromForm(FormName = "CreatePlatformUserSetupForm", Name = "_createUserSetupModel")]
+    private AdminPlatformCreateUserSetupFormModel? CreateUserSetupFormModel { get; set; }
+
+    [SupplyParameterFromForm(FormName = "PlatformUserSearchForm", Name = "_userSearchModel")]
+    private AdminPlatformUserSearchFormModel? UserSearchFormModel { get; set; }
+
+    [SupplyParameterFromForm(FormName = "PlatformSetupActionForm", Name = "_setupActionModel")]
+    private AdminPlatformMemberActionFormModel? SetupActionFormModel { get; set; }
+
+    [SupplyParameterFromForm(FormName = "PlatformMemberActionForm", Name = "_memberActionModel")]
+    private AdminPlatformMemberActionFormModel? MemberActionFormModel { get; set; }
+
+    [SupplyParameterFromForm(FormName = "PlatformUserSearchActionForm", Name = "_userSearchActionModel")]
+    private AdminPlatformMemberActionFormModel? UserSearchActionFormModel { get; set; }
+
+    private string CurrentMembersRoute => $"/admin/platform/cafes/{CafeId}/members";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ResetPageState();
+        _createUserSetupModel = CreateUserSetupFormModel ?? new AdminPlatformCreateUserSetupFormModel();
+        _userSearchModel = UserSearchFormModel ?? new AdminPlatformUserSearchFormModel();
+        _setupActionModel = SetupActionFormModel ?? new AdminPlatformMemberActionFormModel();
+        _memberActionModel = MemberActionFormModel ?? new AdminPlatformMemberActionFormModel();
+        _userSearchActionModel = UserSearchActionFormModel ?? new AdminPlatformMemberActionFormModel();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isPlatformAdmin = authState.User.IsInRole("PLATFORM_ADMIN");
+        if (!_isPlatformAdmin)
+        {
+            _isLoading = false;
+            return;
+        }
+
+        var cafeResult = await AdminPlatformApiClient.GetCafesAsync(CancellationToken.None);
+        if (cafeResult.Status != AdminPlatformRequestStatus.Success)
+        {
+            _membersLoadFailed = true;
+            _isLoading = false;
+            return;
+        }
+
+        _cafe = cafeResult.Cafes.SingleOrDefault(cafe => cafe.Id == CafeId);
+        if (_cafe is null)
+        {
+            _isLoading = false;
+            return;
+        }
+
+        await LoadMembersAsync();
+        _isLoading = false;
+    }
+
+    private async Task CreateUserSetupAsync()
+    {
+        if (!_isPlatformAdmin || _cafe is null)
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            var result = await AdminPlatformApiClient.CreateUserSetupAsync(
+                new AdminPlatformCreateUserSetupRequest(
+                    _createUserSetupModel.Email.Trim(),
+                    _createUserSetupModel.FullName.Trim()),
+                CancellationToken.None);
+
+            if (result.Status == AdminPlatformRequestStatus.Success && result.UserSetup is not null)
+            {
+                _lastSetup = result.UserSetup;
+                _createUserSetupModel = new AdminPlatformCreateUserSetupFormModel();
+                SetSuccessMessage("Kullanici setup token olusturuldu.");
+                return;
+            }
+
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanici setup olusturulamadi."));
+        });
+    }
+
+    private async Task HandleMemberActionAsync()
+    {
+        if (!_isPlatformAdmin || _cafe is null || string.IsNullOrWhiteSpace(_memberActionModel.Action))
+        {
+            return;
+        }
+
+        var parts = _memberActionModel.Action.Split('|', StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 || !long.TryParse(parts[1], out var id))
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            switch (parts[0])
+            {
+                case "Reissue":
+                    await ReissueUserSetupAsync(id);
+                    break;
+                case "AssignOwner":
+                    await AssignMembershipAsync(id, isOwner: true);
+                    break;
+                case "AssignManager":
+                    await AssignMembershipAsync(id, isOwner: false);
+                    break;
+                case "Deactivate":
+                    await DeactivateMembershipAsync(id);
+                    break;
+            }
+        });
+    }
+
+    private async Task SearchUsersAsync()
+    {
+        if (!_isPlatformAdmin || _cafe is null)
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            var result = await AdminPlatformApiClient.SearchUsersAsync(
+                new AdminPlatformUserSearchRequest(_userSearchModel.Query.Trim()),
+                CancellationToken.None);
+
+            _hasSearchedUsers = true;
+            if (result.Status == AdminPlatformRequestStatus.Success)
+            {
+                _searchedUsers = result.Users
+                    .OrderBy(user => user.Email, StringComparer.Ordinal)
+                    .ThenBy(user => user.AppUserId)
+                    .ToArray();
+                return;
+            }
+
+            _searchedUsers = [];
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanici aramasi yapilamadi."));
+        });
+    }
+
+    private async Task HandleUserSearchActionAsync()
+    {
+        if (!_isPlatformAdmin || _cafe is null || string.IsNullOrWhiteSpace(_userSearchActionModel.Action))
+        {
+            return;
+        }
+
+        var parts = _userSearchActionModel.Action.Split('|', StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 || !long.TryParse(parts[1], out var userId))
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            switch (parts[0])
+            {
+                case "AssignOwner":
+                    await AssignMembershipAsync(userId, isOwner: true);
+                    break;
+                case "AssignManager":
+                    await AssignMembershipAsync(userId, isOwner: false);
+                    break;
+            }
+        });
+    }
+
+    private async Task HandleSetupActionAsync()
+    {
+        if (!_isPlatformAdmin || _cafe is null || string.IsNullOrWhiteSpace(_setupActionModel.Action))
+        {
+            return;
+        }
+
+        var parts = _setupActionModel.Action.Split('|', StringSplitOptions.TrimEntries);
+        if (parts.Length != 2 || !long.TryParse(parts[1], out var userId))
+        {
+            return;
+        }
+
+        await RunMutationAsync(async () =>
+        {
+            switch (parts[0])
+            {
+                case "Reissue":
+                    await ReissueUserSetupAsync(userId);
+                    break;
+                case "AssignOwner":
+                    await AssignMembershipAsync(userId, isOwner: true);
+                    break;
+                case "AssignManager":
+                    await AssignMembershipAsync(userId, isOwner: false);
+                    break;
+            }
+        });
+    }
+
+    private async Task ReissueUserSetupAsync(long userId)
+    {
+        var result = await AdminPlatformApiClient.ReissueUserSetupAsync(userId, CancellationToken.None);
+        if (result.Status == AdminPlatformRequestStatus.Success && result.UserSetup is not null)
+        {
+            _lastSetup = result.UserSetup;
+            SetSuccessMessage("Setup token yeniden olusturuldu.");
+            return;
+        }
+
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Setup token yeniden olusturulamadi."));
+    }
+
+    private async Task AssignMembershipAsync(long userId, bool isOwner)
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        var request = new AdminPlatformAssignCafeMemberRequest(_cafe.Id, userId);
+        var result = isOwner
+            ? await AdminPlatformApiClient.AssignCafeOwnerAsync(request, CancellationToken.None)
+            : await AdminPlatformApiClient.AssignCafeManagerAsync(request, CancellationToken.None);
+
+        if (result.Status == AdminPlatformRequestStatus.Success)
+        {
+            await LoadMembersAsync();
+            SetSuccessMessage(isOwner ? "Owner atandi." : "Manager atandi.");
+            return;
+        }
+
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Uyelik atanamadi. Kullanici setup tamamlamamis olabilir."));
+    }
+
+    private async Task DeactivateMembershipAsync(long membershipId)
+    {
+        var result = await AdminPlatformApiClient.DeactivateCafeMembershipAsync(membershipId, CancellationToken.None);
+        if (result.Status == AdminPlatformRequestStatus.Success)
+        {
+            await LoadMembersAsync();
+            SetSuccessMessage("Uyelik pasif hale getirildi.");
+            return;
+        }
+
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Uyelik pasif hale getirilemedi."));
+    }
+
+    private async Task LoadMembersAsync()
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        _membersLoadFailed = false;
+        var result = await AdminPlatformApiClient.GetCafeMembersAsync(_cafe.Id, CancellationToken.None);
+        if (result.Status == AdminPlatformRequestStatus.Success)
+        {
+            _members = result.Members
+                .OrderBy(member => member.FullName, StringComparer.Ordinal)
+                .ThenBy(member => member.Email, StringComparer.Ordinal)
+                .ThenBy(member => member.MembershipId)
+                .ToArray();
+            return;
+        }
+
+        _members = [];
+        _membersLoadFailed = true;
+    }
+
+    private async Task RunMutationAsync(Func<Task> operation)
+    {
+        _isMutating = true;
+        ClearMessage();
+
+        try
+        {
+            await operation();
+        }
+        finally
+        {
+            _isMutating = false;
+        }
+    }
+
+    private void ResetPageState()
+    {
+        _isLoading = true;
+        _isMutating = false;
+        _membersLoadFailed = false;
+        _cafe = null;
+        _members = [];
+        _searchedUsers = [];
+        _lastSetup = null;
+        _hasSearchedUsers = false;
+        ClearMessage();
+    }
+
+    private void SetSuccessMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-success";
+    }
+
+    private void SetErrorMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-error";
+    }
+
+    private void ClearMessage()
+    {
+        _pageMessage = null;
+        _pageMessageCssClass = "admin-message";
+    }
+
+    private static string BuildMemberAction(string action, long id)
+    {
+        return $"{action}|{id}";
+    }
+
+    private static string GetActiveLabel(bool isActive)
+    {
+        return isActive ? "Aktif" : "Pasif";
+    }
+
+    private static string GetActiveBadgeClass(bool isActive)
+    {
+        return isActive
+            ? "admin-badge admin-badge-success"
+            : "admin-badge admin-badge-muted";
+    }
+
+    private static string GetMutationFailureMessage(AdminPlatformRequestStatus status, string fallbackMessage)
+    {
+        return status switch
+        {
+            AdminPlatformRequestStatus.ValidationError => "Form alanlarini kontrol edin.",
+            AdminPlatformRequestStatus.UnauthorizedOrForbidden => "Bu islem icin yetkiniz yok.",
+            AdminPlatformRequestStatus.Conflict => "Islem mevcut durumla cakisti.",
+            AdminPlatformRequestStatus.NotFound => "Kayit bulunamadi.",
+            _ => fallbackMessage
+        };
+    }
+}

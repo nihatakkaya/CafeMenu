@@ -153,6 +153,19 @@ public sealed class PlatformUserService : IPlatformUserService
         return _platformUserMapper.ToSetupResponse(user, generatedToken.PlainToken, generatedToken.Entity.ExpiresAt);
     }
 
+    public async Task<IReadOnlyCollection<PlatformUserSearchResponseDto>> SearchUsersAsync(
+        SearchPlatformUsersRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = NormalizeAndValidateSearchQuery(request.Query);
+        var pageSize = Math.Clamp(request.PageSize, 1, 20);
+        var users = await _appUserRepository.SearchForPlatformOnboardingAsync(query, pageSize, cancellationToken);
+
+        return users
+            .Select(_platformUserMapper.ToSearchResponse)
+            .ToArray();
+    }
+
     private async Task<GeneratedSetupToken> CreateSetupTokenAsync(
         long appUserId,
         DateTimeOffset utcNow,
@@ -203,6 +216,19 @@ public sealed class PlatformUserService : IPlatformUserService
         }
 
         return normalizedFullName;
+    }
+
+    private static string NormalizeAndValidateSearchQuery(string query)
+    {
+        var normalizedQuery = query.Trim();
+        if (normalizedQuery.Length < 2 || normalizedQuery.Length > 320)
+        {
+            throw new BadRequestApplicationException(
+                "Search query is invalid.",
+                ApplicationErrorCodes.ValidationFailed);
+        }
+
+        return normalizedQuery;
     }
 
     private static void ValidatePasswordConfirmation(string password, string confirmPassword)

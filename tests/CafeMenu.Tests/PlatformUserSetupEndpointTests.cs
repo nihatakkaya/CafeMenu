@@ -222,6 +222,103 @@ public sealed class PlatformUserSetupEndpointTests
     }
 
     [Fact]
+    public async Task SearchUsers_ShouldRequirePlatformAdmin()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var normalUser = await SeedUserAsync(factory, "search-normal@example.local");
+        using var anonymousClient = factory.CreateClient();
+        using var authenticatedClient = factory.CreateClient();
+        await AuthorizeAsync(authenticatedClient, normalUser.Email);
+
+        using var anonymousResponse = await anonymousClient.GetAsync("/PlatformUser/SearchUsers?query=user");
+        using var forbiddenResponse = await authenticatedClient.GetAsync("/PlatformUser/SearchUsers?query=user");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, anonymousResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, forbiddenResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task PlatformAdmin_ShouldSearchUsersByEmailOrFullName()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var admin = await SeedUserAsync(factory, "search-admin@example.local", ApplicationRoles.PlatformAdmin);
+        var activeUser = await SeedUserWithStateAsync(factory, "found.owner@example.local", fullName: "Found Owner");
+        var activeNameUser = await SeedUserWithStateAsync(factory, "name-target@example.local", fullName: "Unique Search Name");
+        await SeedUserWithStateAsync(factory, "pending.owner@example.local", isActive: false, fullName: "Pending Owner");
+        await SeedUserWithStateAsync(factory, "other@example.local", fullName: "Other Person");
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, admin.Email);
+
+        using var emailResponse = await client.GetAsync("/PlatformUser/SearchUsers?query=FOUND");
+        using var nameResponse = await client.GetAsync("/PlatformUser/SearchUsers?query=Unique");
+        using var inactiveResponse = await client.GetAsync("/PlatformUser/SearchUsers?query=Pending");
+        var emailJson = await ParseAsync(emailResponse);
+        var nameJson = await ParseAsync(nameResponse);
+        var inactiveJson = await ParseAsync(inactiveResponse);
+
+        Assert.Equal(HttpStatusCode.OK, emailResponse.StatusCode);
+        Assert.Equal(activeUser.Id, emailJson.RootElement.GetProperty("data")[0].GetProperty("appUserId").GetInt64());
+        Assert.Equal("found.owner@example.local", emailJson.RootElement.GetProperty("data")[0].GetProperty("email").GetString());
+        Assert.True(emailJson.RootElement.GetProperty("data")[0].GetProperty("isActive").GetBoolean());
+
+        Assert.Equal(HttpStatusCode.OK, nameResponse.StatusCode);
+        Assert.Equal(activeNameUser.Id, nameJson.RootElement.GetProperty("data")[0].GetProperty("appUserId").GetInt64());
+        Assert.Equal("Unique Search Name", nameJson.RootElement.GetProperty("data")[0].GetProperty("fullName").GetString());
+
+        Assert.Equal(HttpStatusCode.OK, inactiveResponse.StatusCode);
+        Assert.Equal(0, inactiveJson.RootElement.GetProperty("data").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task SearchUsers_ShouldFilterDeletedUsersAndLimitResults()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var admin = await SeedUserAsync(factory, "search-limit-admin@example.local", ApplicationRoles.PlatformAdmin);
+        await SeedUserWithStateAsync(factory, "limit-a@example.local", fullName: "Limit User A");
+        await SeedUserWithStateAsync(factory, "limit-b@example.local", fullName: "Limit User B");
+        await SeedUserWithStateAsync(factory, "limit-deleted@example.local", isDeleted: true, fullName: "Limit Deleted");
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, admin.Email);
+
+        using var response = await client.GetAsync("/PlatformUser/SearchUsers?query=limit&pageSize=1");
+        var json = await ParseAsync(response);
+        var jsonBody = json.RootElement.ToString();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(1, json.RootElement.GetProperty("data").GetArrayLength());
+        Assert.DoesNotContain("limit-deleted@example.local", jsonBody, StringComparison.Ordinal);
+
+        using var deletedResponse = await client.GetAsync("/PlatformUser/SearchUsers?query=limit-deleted&pageSize=10");
+        var deletedJson = await ParseAsync(deletedResponse);
+
+        Assert.Equal(HttpStatusCode.OK, deletedResponse.StatusCode);
+        Assert.Equal(0, deletedJson.RootElement.GetProperty("data").GetArrayLength());
+    }
+
+    [Fact]
+    public async Task SearchUsers_ShouldReturnMinimalDtoWithoutSecurityData()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var admin = await SeedUserAsync(factory, "search-security-admin@example.local", ApplicationRoles.PlatformAdmin);
+        await SeedUserWithStateAsync(factory, "security-target@example.local", fullName: "Security Target");
+        using var client = factory.CreateClient();
+        await AuthorizeAsync(client, admin.Email);
+
+        using var response = await client.GetAsync("/PlatformUser/SearchUsers?query=security-target");
+        var content = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("appUserId", content, StringComparison.Ordinal);
+        Assert.Contains("security-target@example.local", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("password", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("refresh", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("setupToken", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("tokenHash", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("roleCode", content, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("roles", content, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task UserSetupResponses_ShouldNotExposePasswordHashOrTokenHash()
     {
         await using var factory = new CustomWebApplicationFactory();
@@ -350,6 +447,33 @@ public sealed class PlatformUserSetupEndpointTests
         string email,
         params string[] roleCodes)
     {
+        return await SeedUserCoreAsync(
+            factory,
+            email,
+            isActive: true,
+            isDeleted: false,
+            fullName: "Test User",
+            roleCodes);
+    }
+
+    private static async Task<AppUserEntity> SeedUserWithStateAsync(
+        CustomWebApplicationFactory factory,
+        string email,
+        bool isActive = true,
+        bool isDeleted = false,
+        string fullName = "Test User")
+    {
+        return await SeedUserCoreAsync(factory, email, isActive, isDeleted, fullName, []);
+    }
+
+    private static async Task<AppUserEntity> SeedUserCoreAsync(
+        CustomWebApplicationFactory factory,
+        string email,
+        bool isActive,
+        bool isDeleted,
+        string fullName,
+        IReadOnlyCollection<string> roleCodes)
+    {
         using var scope = factory.Services.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<CafeMenuDbContext>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
@@ -359,9 +483,11 @@ public sealed class PlatformUserSetupEndpointTests
         var user = new AppUserEntity
         {
             Email = email.Trim().ToLowerInvariant(),
-            FullName = "Test User",
+            FullName = fullName,
             PasswordHash = passwordHasher.HashPassword(ValidPassword),
-            IsActive = true,
+            IsActive = isActive,
+            IsDeleted = isDeleted,
+            DeletedAt = isDeleted ? utcNow : null,
             CreatedAt = utcNow,
             UpdatedAt = utcNow
         };
