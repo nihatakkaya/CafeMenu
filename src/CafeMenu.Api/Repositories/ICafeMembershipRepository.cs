@@ -8,6 +8,12 @@ public interface ICafeMembershipRepository
 
     Task<CafeMembershipEntity?> GetActiveMembershipAsync(long appUserId, long cafeId, CancellationToken cancellationToken);
 
+    Task<CafeMembershipEntity?> GetActiveMembershipForUserCafeAsync(long appUserId, long cafeId, CancellationToken cancellationToken);
+
+    Task<CafeMembershipEntity?> GetByIdWithUserCafeRoleAsync(long membershipId, CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<CafeMembershipEntity>> GetActiveMembershipsForCafeAsync(long cafeId, CancellationToken cancellationToken);
+
     Task<IReadOnlyCollection<CafeMembershipEntity>> GetActiveMembershipsForUserAsync(
         long appUserId,
         IReadOnlyCollection<string> roleCodes,

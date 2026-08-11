@@ -26,4 +26,19 @@ public interface ICafeService
     Task<CafeResponseDto> DeactivateCafeAsync(long cafeId, CancellationToken cancellationToken);
 
     Task<CafeMembershipResponseDto> AssignCafeOwnerAsync(AssignCafeOwnerRequest request, CancellationToken cancellationToken);
+
+    Task<CafeMembershipResponseDto> AssignCafeManagerAsync(
+        long appUserId,
+        AssignCafeManagerRequest request,
+        CancellationToken cancellationToken);
+
+    Task<CafeMembershipResponseDto> DeactivateCafeMembershipAsync(
+        long appUserId,
+        long membershipId,
+        CancellationToken cancellationToken);
+
+    Task<IReadOnlyCollection<CafeMemberResponseDto>> GetCafeMembersAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken);
 }

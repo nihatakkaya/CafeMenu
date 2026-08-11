@@ -146,6 +146,47 @@ public sealed class CafeController : ControllerBase
         return Ok(ApiResponse<CafeMembershipResponseDto>.SuccessResponse(response, "Cafe owner assigned successfully."));
     }
 
+    [HttpPost("AssignCafeManager")]
+    [ProducesResponseType(typeof(ApiResponse<CafeMembershipResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<CafeMembershipResponseDto>>> AssignCafeManager(
+        [FromBody] AssignCafeManagerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.AssignCafeManagerAsync(GetCurrentAppUserId(), request, cancellationToken);
+        return Ok(ApiResponse<CafeMembershipResponseDto>.SuccessResponse(response, "Cafe manager assigned successfully."));
+    }
+
+    [HttpPost("DeactivateCafeMembership/{membershipId:long}")]
+    [ProducesResponseType(typeof(ApiResponse<CafeMembershipResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CafeMembershipResponseDto>>> DeactivateCafeMembership(
+        long membershipId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.DeactivateCafeMembershipAsync(GetCurrentAppUserId(), membershipId, cancellationToken);
+        return Ok(ApiResponse<CafeMembershipResponseDto>.SuccessResponse(response, "Cafe membership deactivated successfully."));
+    }
+
+    [HttpGet("GetCafeMembers/{cafeId:long}")]
+    [ProducesResponseType(typeof(ApiResponse<IReadOnlyCollection<CafeMemberResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyCollection<CafeMemberResponseDto>>>> GetCafeMembers(
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.GetCafeMembersAsync(GetCurrentAppUserId(), cafeId, cancellationToken);
+        return Ok(ApiResponse<IReadOnlyCollection<CafeMemberResponseDto>>.SuccessResponse(response, "Cafe members retrieved successfully."));
+    }
+
     private long GetCurrentAppUserId()
     {
         var appUserIdValue = User.FindFirstValue("app_user_id")

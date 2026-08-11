@@ -6,6 +6,7 @@ using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
 using CafeMenu.Api.Utilities;
+using Microsoft.EntityFrameworkCore;
 
 namespace CafeMenu.Api.Services;
 
@@ -220,50 +221,216 @@ public sealed class CafeService : ICafeService
         CancellationToken cancellationToken)
     {
         var cafe = await GetCafeOrThrowAsync(request.CafeId, cancellationToken);
-        var user = await _appUserRepository.GetByIdWithRolesAsync(request.AppUserId, cancellationToken);
+        var user = await GetAssignableUserOrThrowAsync(request.AppUserId, cancellationToken);
+        var ownerRole = await GetCafeRoleOrThrowAsync(ApplicationRoles.CafeOwner, cancellationToken);
 
-        if (user is null || !user.IsActive || user.IsDeleted)
+        var response = await AssignCafeRoleAsync(user, cafe, ownerRole, cancellationToken);
+        _logger.LogInformation("User {UserId} assigned as owner for cafe {CafeId}", user.Id, cafe.Id);
+
+        return response;
+    }
+
+    public async Task<CafeMembershipResponseDto> AssignCafeManagerAsync(
+        long appUserId,
+        AssignCafeManagerRequest request,
+        CancellationToken cancellationToken)
+    {
+        var currentUser = await GetCurrentActiveUserOrThrowAsync(appUserId, cancellationToken);
+        var isPlatformAdmin = HasPlatformAdminRole(currentUser);
+
+        if (!isPlatformAdmin)
         {
-            throw new NotFoundApplicationException("User was not found.", "USER001");
+            await _tenantAuthorizationService.EnsureCafeAccessAsync(
+                appUserId,
+                request.CafeId,
+                CafeOwnerRoles,
+                allowPlatformAdmin: false,
+                cancellationToken);
         }
 
-        if (await _cafeMembershipRepository.ActiveMembershipExistsAsync(user.Id, cafe.Id, cancellationToken))
+        var cafe = await GetCafeOrThrowAsync(request.CafeId, cancellationToken);
+        var user = await GetAssignableUserOrThrowAsync(request.AppUserId, cancellationToken);
+        var managerRole = await GetCafeRoleOrThrowAsync(ApplicationRoles.CafeManager, cancellationToken);
+        var existingMembership = await _cafeMembershipRepository.GetActiveMembershipForUserCafeAsync(
+            user.Id,
+            cafe.Id,
+            cancellationToken);
+
+        if (!isPlatformAdmin && existingMembership?.Role.Code == ApplicationRoles.CafeOwner)
+        {
+            throw new ForbiddenApplicationException(
+                "Cafe owner memberships can only be changed by a platform administrator.",
+                ApplicationErrorCodes.TenantAccessForbidden);
+        }
+
+        var response = await AssignCafeRoleAsync(user, cafe, managerRole, cancellationToken, existingMembership);
+        _logger.LogInformation("User {UserId} assigned as manager for cafe {CafeId}", user.Id, cafe.Id);
+
+        return response;
+    }
+
+    public async Task<CafeMembershipResponseDto> DeactivateCafeMembershipAsync(
+        long appUserId,
+        long membershipId,
+        CancellationToken cancellationToken)
+    {
+        var currentUser = await GetCurrentActiveUserOrThrowAsync(appUserId, cancellationToken);
+        var isPlatformAdmin = HasPlatformAdminRole(currentUser);
+        var membership = await GetMembershipOrThrowAsync(membershipId, cancellationToken);
+
+        if (!isPlatformAdmin)
+        {
+            await _tenantAuthorizationService.EnsureCafeAccessAsync(
+                appUserId,
+                membership.CafeId,
+                CafeOwnerRoles,
+                allowPlatformAdmin: false,
+                cancellationToken);
+
+            if (membership.Role.Code != ApplicationRoles.CafeManager)
+            {
+                throw new ForbiddenApplicationException(
+                    "Only platform administrators can deactivate cafe owner memberships.",
+                    ApplicationErrorCodes.TenantAccessForbidden);
+            }
+        }
+
+        if (membership.IsActive)
+        {
+            membership.IsActive = false;
+            membership.UpdatedAt = DateTimeOffset.UtcNow;
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Cafe membership {MembershipId} deactivated", membership.Id);
+        }
+
+        return ToMembershipResponse(membership);
+    }
+
+    public async Task<IReadOnlyCollection<CafeMemberResponseDto>> GetCafeMembersAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        await _tenantAuthorizationService.EnsureCafeAccessAsync(
+            appUserId,
+            cafeId,
+            CafeOwnerRoles,
+            allowPlatformAdmin: true,
+            cancellationToken);
+
+        _ = await GetCafeOrThrowAsync(cafeId, cancellationToken);
+        var memberships = await _cafeMembershipRepository.GetActiveMembershipsForCafeAsync(cafeId, cancellationToken);
+
+        return memberships
+            .Select(_cafeMapper.ToMemberResponse)
+            .ToArray();
+    }
+
+    private async Task<CafeMembershipResponseDto> AssignCafeRoleAsync(
+        AppUserEntity user,
+        CafeEntity cafe,
+        RoleEntity role,
+        CancellationToken cancellationToken,
+        CafeMembershipEntity? existingMembership = null)
+    {
+        existingMembership ??= await _cafeMembershipRepository.GetActiveMembershipForUserCafeAsync(
+            user.Id,
+            cafe.Id,
+            cancellationToken);
+
+        var utcNow = DateTimeOffset.UtcNow;
+        if (existingMembership is not null)
+        {
+            if (existingMembership.RoleId != role.Id)
+            {
+                existingMembership.RoleId = role.Id;
+                existingMembership.Role = role;
+                existingMembership.UpdatedAt = utcNow;
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+
+            return ToMembershipResponse(existingMembership);
+        }
+
+        var membership = new CafeMembershipEntity
+        {
+            AppUserId = user.Id,
+            CafeId = cafe.Id,
+            RoleId = role.Id,
+            IsActive = true,
+            CreatedAt = utcNow,
+            UpdatedAt = utcNow,
+            AppUser = user,
+            Cafe = cafe,
+            Role = role
+        };
+
+        await _cafeMembershipRepository.AddAsync(membership, cancellationToken);
+        try
+        {
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
         {
             throw new ConflictApplicationException(
                 "User already has an active membership for this cafe.",
                 ApplicationErrorCodes.CafeMembershipAlreadyExists);
         }
 
-        var ownerRole = await _roleRepository.GetByCodeAsync(ApplicationRoles.CafeOwner, cancellationToken)
-            ?? throw new NotFoundApplicationException("Cafe owner role was not found.", ApplicationErrorCodes.CafeMembershipNotFound);
+        return ToMembershipResponse(membership);
+    }
 
-        var utcNow = DateTimeOffset.UtcNow;
-        var membership = new CafeMembershipEntity
+    private async Task<AppUserEntity> GetAssignableUserOrThrowAsync(long appUserId, CancellationToken cancellationToken)
+    {
+        var user = await _appUserRepository.GetByIdWithRolesAsync(appUserId, cancellationToken);
+
+        if (user is null || !user.IsActive || user.IsDeleted)
         {
-            AppUserId = user.Id,
-            CafeId = cafe.Id,
-            RoleId = ownerRole.Id,
-            IsActive = true,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow,
-            AppUser = user,
-            Cafe = cafe,
-            Role = ownerRole
-        };
+            throw new NotFoundApplicationException("User was not found.", ApplicationErrorCodes.UserNotFound);
+        }
 
-        await _cafeMembershipRepository.AddAsync(membership, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return user;
+    }
 
-        _logger.LogInformation("User {UserId} assigned as owner for cafe {CafeId}", user.Id, cafe.Id);
+    private async Task<AppUserEntity> GetCurrentActiveUserOrThrowAsync(long appUserId, CancellationToken cancellationToken)
+    {
+        var user = await _appUserRepository.GetByIdWithRolesAsync(appUserId, cancellationToken);
 
+        if (user is null || !user.IsActive || user.IsDeleted)
+        {
+            throw new UnauthorizedApplicationException("User is not authorized.", "AUTH004");
+        }
+
+        return user;
+    }
+
+    private async Task<RoleEntity> GetCafeRoleOrThrowAsync(string roleCode, CancellationToken cancellationToken)
+    {
+        return await _roleRepository.GetByCodeAsync(roleCode, cancellationToken)
+            ?? throw new NotFoundApplicationException("Cafe role was not found.", ApplicationErrorCodes.CafeMembershipNotFound);
+    }
+
+    private async Task<CafeMembershipEntity> GetMembershipOrThrowAsync(long membershipId, CancellationToken cancellationToken)
+    {
+        return await _cafeMembershipRepository.GetByIdWithUserCafeRoleAsync(membershipId, cancellationToken)
+            ?? throw new NotFoundApplicationException("Cafe membership was not found.", ApplicationErrorCodes.CafeMembershipNotFound);
+    }
+
+    private static CafeMembershipResponseDto ToMembershipResponse(CafeMembershipEntity membership)
+    {
         return new CafeMembershipResponseDto(
             membership.Id,
-            cafe.Id,
-            user.Id,
-            user.Email,
-            user.FullName,
-            ownerRole.Code,
+            membership.CafeId,
+            membership.AppUserId,
+            membership.AppUser.Email,
+            membership.AppUser.FullName,
+            membership.Role.Code,
             membership.IsActive);
+    }
+
+    private static bool HasPlatformAdminRole(AppUserEntity user)
+    {
+        return user.Roles.Any(role => role.Code == ApplicationRoles.PlatformAdmin);
     }
 
     private async Task<CafeEntity> GetCafeOrThrowAsync(long cafeId, CancellationToken cancellationToken)

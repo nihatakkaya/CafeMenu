@@ -38,6 +38,56 @@ public sealed class CafeMembershipRepository : ICafeMembershipRepository
                 cancellationToken);
     }
 
+    public Task<CafeMembershipEntity?> GetActiveMembershipForUserCafeAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        return _dbContext.CafeMemberships
+            .Include(membership => membership.AppUser)
+            .Include(membership => membership.Cafe)
+            .Include(membership => membership.Role)
+            .FirstOrDefaultAsync(
+                membership =>
+                    membership.AppUserId == appUserId &&
+                    membership.CafeId == cafeId &&
+                    membership.IsActive &&
+                    !membership.IsDeleted,
+                cancellationToken);
+    }
+
+    public Task<CafeMembershipEntity?> GetByIdWithUserCafeRoleAsync(
+        long membershipId,
+        CancellationToken cancellationToken)
+    {
+        return _dbContext.CafeMemberships
+            .Include(membership => membership.AppUser)
+            .Include(membership => membership.Cafe)
+            .Include(membership => membership.Role)
+            .FirstOrDefaultAsync(
+                membership => membership.Id == membershipId && !membership.IsDeleted,
+                cancellationToken);
+    }
+
+    public async Task<IReadOnlyCollection<CafeMembershipEntity>> GetActiveMembershipsForCafeAsync(
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        return await _dbContext.CafeMemberships
+            .AsNoTracking()
+            .Include(membership => membership.AppUser)
+            .Include(membership => membership.Role)
+            .Where(membership =>
+                membership.CafeId == cafeId &&
+                membership.IsActive &&
+                !membership.IsDeleted &&
+                !membership.AppUser.IsDeleted)
+            .OrderBy(membership => membership.AppUser.FullName)
+            .ThenBy(membership => membership.AppUser.Email)
+            .ThenBy(membership => membership.Id)
+            .ToArrayAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyCollection<CafeMembershipEntity>> GetActiveMembershipsForUserAsync(
         long appUserId,
         IReadOnlyCollection<string> roleCodes,

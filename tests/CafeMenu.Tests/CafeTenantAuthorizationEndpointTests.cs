@@ -162,7 +162,7 @@ public sealed class CafeTenantAuthorizationEndpointTests
     }
 
     [Fact]
-    public async Task AssignCafeOwner_ShouldRejectDuplicateMembership()
+    public async Task AssignCafeOwner_ShouldBeIdempotentForExistingOwnerMembership()
     {
         await using var factory = new CustomWebApplicationFactory();
         var platformAdmin = await SeedUserAsync(factory, "membership-admin@example.com", ApplicationRoles.PlatformAdmin);
@@ -176,7 +176,7 @@ public sealed class CafeTenantAuthorizationEndpointTests
         using var secondResponse = await client.PostAsJsonAsync("/Cafe/AssignCafeOwner", request);
 
         Assert.Equal(HttpStatusCode.OK, firstResponse.StatusCode);
-        Assert.Equal(HttpStatusCode.Conflict, secondResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, secondResponse.StatusCode);
     }
 
     [Fact]

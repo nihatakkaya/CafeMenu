@@ -56,4 +56,15 @@ public partial class CafeMapper
             membership.Role.Code,
             membership.IsActive);
     }
+
+    public CafeMemberResponseDto ToMemberResponse(CafeMembershipEntity membership)
+    {
+        return new CafeMemberResponseDto(
+            membership.Id,
+            membership.AppUserId,
+            membership.AppUser.Email,
+            membership.AppUser.FullName,
+            membership.Role.Code,
+            membership.IsActive);
+    }
 }
