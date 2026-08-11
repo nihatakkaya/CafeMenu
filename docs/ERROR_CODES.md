@@ -26,6 +26,8 @@ The codes are technology-independent and are used consistently by the ASP.NET Co
 | USER001 | User not found          |
 | USER002 | Email already exists    |
 | USER003 | Username already exists |
+| USER004 | User setup token invalid |
+| USER005 | User setup already completed |
 
 ---
 

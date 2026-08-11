@@ -40,6 +40,7 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IAppUserRepository, AppUserRepository>();
         services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IUserSetupTokenRepository, UserSetupTokenRepository>();
         services.AddScoped<ICafeRepository, CafeRepository>();
         services.AddScoped<ICafeMembershipRepository, CafeMembershipRepository>();
         services.AddScoped<ICafeThemeRepository, CafeThemeRepository>();
@@ -50,6 +51,7 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<AppUserMapper>();
+        services.AddScoped<PlatformUserMapper>();
         services.AddScoped<CafeMapper>();
         services.AddScoped<CafeThemeMapper>();
         services.AddScoped<CategoryMapper>();
@@ -57,6 +59,7 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<PublicMenuMapper>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IPlatformAdminBootstrapService, PlatformAdminBootstrapService>();
+        services.AddScoped<IPlatformUserService, PlatformUserService>();
         services.AddScoped<ITenantAuthorizationService, TenantAuthorizationService>();
         services.AddScoped<ICafeService, CafeService>();
         services.AddScoped<ICafeBrandingService, CafeBrandingService>();
@@ -65,6 +68,12 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IPublicMenuService, PublicMenuService>();
         services.AddSingleton<IConsolePasswordReader, ConsolePasswordReader>();
         services.AddSingleton<PlatformAdminBootstrapRunner>();
+
+        services.AddOptions<UserSetupOptions>()
+            .Configure<IConfiguration>((options, configuration) =>
+                configuration.GetSection(UserSetupOptions.SectionName).Bind(options))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         return services;
     }

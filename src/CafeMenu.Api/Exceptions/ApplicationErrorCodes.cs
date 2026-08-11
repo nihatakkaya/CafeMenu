@@ -2,6 +2,11 @@ namespace CafeMenu.Api.Exceptions;
 
 public static class ApplicationErrorCodes
 {
+    public const string UserNotFound = "USER001";
+    public const string UserEmailAlreadyExists = "USER002";
+    public const string UserSetupTokenInvalid = "USER004";
+    public const string UserSetupAlreadyCompleted = "USER005";
+    public const string ValidationFailed = "VAL001";
     public const string CategoryNotFound = "CAT001";
     public const string CategoryReorderInvalid = "CAT002";
     public const string ProductNotFound = "PRO001";

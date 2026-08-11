@@ -18,6 +18,13 @@ public sealed class AppUserRepository : IAppUserRepository
         return _dbContext.AppUsers.AnyAsync(user => user.Email == email, cancellationToken);
     }
 
+    public Task<bool> EmailExistsIncludingDeletedAsync(string email, CancellationToken cancellationToken)
+    {
+        return _dbContext.AppUsers
+            .IgnoreQueryFilters()
+            .AnyAsync(user => user.Email == email, cancellationToken);
+    }
+
     public Task<AppUserEntity?> GetByEmailWithRolesAsync(string email, CancellationToken cancellationToken)
     {
         return _dbContext.AppUsers

@@ -61,6 +61,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
         return statusCode switch
         {
             StatusCodes.Status401Unauthorized => "Unauthorized",
+            StatusCodes.Status400BadRequest => "Bad Request",
             StatusCodes.Status403Forbidden => "Forbidden",
             StatusCodes.Status404NotFound => "Not Found",
             StatusCodes.Status409Conflict => "Conflict",
