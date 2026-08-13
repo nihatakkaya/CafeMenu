@@ -67,3 +67,32 @@ public sealed class PublicMenuProductResponse
 
     public int DisplayOrder { get; init; }
 }
+
+public sealed class PublicProductDetailResponse
+{
+    public string CafeName { get; init; } = string.Empty;
+
+    public string Slug { get; init; } = string.Empty;
+
+    public string? LogoImageUrl { get; init; }
+
+    public string? CoverImageUrl { get; init; }
+
+    public PublicMenuThemeResponse Theme { get; init; } = new();
+
+    public long CategoryId { get; init; }
+
+    public string CategoryName { get; init; } = string.Empty;
+
+    public long ProductId { get; init; }
+
+    public string ProductName { get; init; } = string.Empty;
+
+    public string? Description { get; init; }
+
+    public decimal Price { get; init; }
+
+    public string? ImageUrl { get; init; }
+
+    public bool IsAvailable { get; init; }
+}

@@ -52,4 +52,45 @@ public sealed class PublicMenuApiClient : IPublicMenuApiClient
             return PublicMenuRequestResult.Failure();
         }
     }
+
+    public async Task<PublicProductDetailRequestResult> GetProductDetailAsync(
+        string slug,
+        long productId,
+        CancellationToken cancellationToken)
+    {
+        var normalizedSlug = slug.Trim().ToLowerInvariant();
+
+        try
+        {
+            using var response = await _httpClient.GetAsync(
+                $"PublicMenu/GetProductDetail/{Uri.EscapeDataString(normalizedSlug)}/{productId}",
+                cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return PublicProductDetailRequestResult.NotFound();
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return PublicProductDetailRequestResult.Failure();
+            }
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<PublicProductDetailResponse>>(
+                JsonOptions,
+                cancellationToken);
+
+            return apiResponse is { Success: true, Data: not null }
+                ? PublicProductDetailRequestResult.Success(apiResponse.Data)
+                : PublicProductDetailRequestResult.Failure();
+        }
+        catch (HttpRequestException)
+        {
+            return PublicProductDetailRequestResult.Failure();
+        }
+        catch (JsonException)
+        {
+            return PublicProductDetailRequestResult.Failure();
+        }
+    }
 }

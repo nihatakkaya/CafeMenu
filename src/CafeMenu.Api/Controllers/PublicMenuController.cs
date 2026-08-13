@@ -28,4 +28,16 @@ public sealed class PublicMenuController : ControllerBase
         var response = await _publicMenuService.GetMenuAsync(slug, cancellationToken);
         return Ok(ApiResponse<PublicMenuResponseDto>.SuccessResponse(response, "Public menu retrieved successfully."));
     }
+
+    [HttpGet("GetProductDetail/{slug}/{productId:long}")]
+    [ProducesResponseType(typeof(ApiResponse<PublicMenuProductDetailResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<PublicMenuProductDetailResponseDto>>> GetProductDetail(
+        string slug,
+        long productId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _publicMenuService.GetProductDetailAsync(slug, productId, cancellationToken);
+        return Ok(ApiResponse<PublicMenuProductDetailResponseDto>.SuccessResponse(response, "Public product retrieved successfully."));
+    }
 }

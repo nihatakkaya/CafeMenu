@@ -366,6 +366,14 @@ public sealed class AccountSetupBlazorTests
         {
             return Task.FromResult(PublicMenuRequestResult.NotFound());
         }
+
+        public Task<PublicProductDetailRequestResult> GetProductDetailAsync(
+            string slug,
+            long productId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(PublicProductDetailRequestResult.NotFound());
+        }
     }
 
     private sealed class RecordingHttpClientFactory : IHttpClientFactory

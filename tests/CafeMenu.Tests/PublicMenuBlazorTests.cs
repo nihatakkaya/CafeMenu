@@ -44,6 +44,72 @@ public sealed class PublicMenuBlazorTests
         Assert.Contains("Flat White", html, StringComparison.Ordinal);
         Assert.Contains("150,00", html, StringComparison.Ordinal);
         Assert.Contains("&#x20BA;", html, StringComparison.Ordinal);
+        Assert.Contains("/c/mocca-cafe/products/20", html, StringComparison.Ordinal);
+        Assert.Contains("name=\"q\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicMenuPage_ShouldFilterProductsByName()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(PublicMenuRequestResult.Success(CreateMenuWithMultipleProducts())));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe?q=latte");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Arama", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Latte", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Flat White", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicMenuPage_ShouldFilterProductsCaseInsensitivelyByDescription()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(PublicMenuRequestResult.Success(CreateMenuWithMultipleProducts())));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe?q=ESPRESSO");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("Flat White", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Latte", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicMenuPage_ShouldKeepCategoryMenuForEmptySearch()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(PublicMenuRequestResult.Success(CreateMenuWithMultipleProducts())));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe?q=");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("category-nav", html, StringComparison.Ordinal);
+        Assert.Contains("Flat White", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Latte", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("data-state=\"no-search-results\"", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicMenuPage_ShouldRenderNoResultSearchState()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(PublicMenuRequestResult.Success(CreateMenuWithMultipleProducts())));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe?q=matchnothing");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-state=\"no-search-results\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Flat White", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Cafe Latte", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -58,7 +124,7 @@ public sealed class PublicMenuBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Flat White", html, StringComparison.Ordinal);
-        Assert.Contains("Tükendi", html, StringComparison.Ordinal);
+        Assert.Contains("availability", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -99,7 +165,7 @@ public sealed class PublicMenuBlazorTests
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Menü bulunamadı", html, StringComparison.Ordinal);
+        Assert.Contains("public-menu-state", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -113,7 +179,77 @@ public sealed class PublicMenuBlazorTests
         var html = await response.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Menü yüklenemedi", html, StringComparison.Ordinal);
+        Assert.Contains("public-menu-state", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicProductDetailPage_ShouldCallApiWithSlugAndProductId()
+    {
+        var apiClient = new FakePublicMenuApiClient(
+            PublicMenuRequestResult.NotFound(),
+            PublicProductDetailRequestResult.Success(CreateProductDetail()));
+        await using var factory = new PublicMenuWebApplicationFactory(apiClient);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe/products/20");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("mocca-cafe", apiClient.LastProductDetailSlug);
+        Assert.Equal(20, apiClient.LastProductDetailProductId);
+        Assert.Contains("Flat White", html, StringComparison.Ordinal);
+        Assert.Contains("Kahveler", html, StringComparison.Ordinal);
+        Assert.Contains("150,00", html, StringComparison.Ordinal);
+        Assert.Contains("/c/mocca-cafe", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicProductDetailPage_ShouldRenderUnavailableState()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(
+                PublicMenuRequestResult.NotFound(),
+                PublicProductDetailRequestResult.Success(CreateProductDetail(isAvailable: false))));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe/products/20");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("availability", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicProductDetailPage_ShouldRenderNotFoundState()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(
+                PublicMenuRequestResult.NotFound(),
+                PublicProductDetailRequestResult.NotFound()));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe/products/999");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-state=\"not-found\"", html, StringComparison.Ordinal);
+        Assert.Contains("/c/mocca-cafe", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicProductDetailPage_ShouldRenderFailureState()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(
+                PublicMenuRequestResult.NotFound(),
+                PublicProductDetailRequestResult.Failure()));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe/products/20");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("data-state=\"failure\"", html, StringComparison.Ordinal);
     }
 
     private static PublicMenuResponse CreateMenu(
@@ -133,8 +269,8 @@ public sealed class PublicMenuBlazorTests
                 AccentColor = "#D97706",
                 BackgroundColor = "#FFFFFF",
                 TextColor = "#111111",
-                WelcomeTitle = "Hoş geldiniz",
-                WelcomeDescription = "Taze kahveler ve günlük lezzetler",
+                WelcomeTitle = "Welcome",
+                WelcomeDescription = "Daily menu",
                 FontPreset = "SYSTEM",
                 ThemePreset = "CLASSIC"
             },
@@ -144,7 +280,7 @@ public sealed class PublicMenuBlazorTests
                 {
                     Id = 10,
                     Name = "Kahveler",
-                    Description = "Sıcak içecekler",
+                    Description = "Hot drinks",
                     DisplayOrder = 1,
                     Products =
                     [
@@ -152,7 +288,7 @@ public sealed class PublicMenuBlazorTests
                         {
                             Id = 20,
                             Name = "Flat White",
-                            Description = "Çift shot espresso",
+                            Description = "Double espresso",
                             Price = 150m,
                             ImageUrl = "https://cdn.example.com/flat-white.png",
                             IsAvailable = isAvailable,
@@ -164,21 +300,124 @@ public sealed class PublicMenuBlazorTests
         };
     }
 
+    private static PublicMenuResponse CreateMenuWithMultipleProducts()
+    {
+        return new PublicMenuResponse
+        {
+            CafeName = "Mocca Cafe",
+            Slug = "mocca-cafe",
+            LogoImageUrl = "https://cdn.example.com/logo.png",
+            CoverImageUrl = "https://cdn.example.com/cover.png",
+            Theme = new PublicMenuThemeResponse
+            {
+                PrimaryColor = "#111827",
+                SecondaryColor = "#F9FAFB",
+                AccentColor = "#D97706",
+                BackgroundColor = "#FFFFFF",
+                TextColor = "#111111",
+                WelcomeTitle = "Welcome",
+                WelcomeDescription = "Daily menu",
+                FontPreset = "SYSTEM",
+                ThemePreset = "CLASSIC"
+            },
+            Categories =
+            [
+                new PublicMenuCategoryResponse
+                {
+                    Id = 10,
+                    Name = "Kahveler",
+                    Description = "Hot drinks",
+                    DisplayOrder = 1,
+                    Products =
+                    [
+                        new PublicMenuProductResponse
+                        {
+                            Id = 20,
+                            Name = "Flat White",
+                            Description = "Double espresso",
+                            Price = 150m,
+                            ImageUrl = "https://cdn.example.com/flat-white.png",
+                            IsAvailable = true,
+                            DisplayOrder = 1
+                        },
+                        new PublicMenuProductResponse
+                        {
+                            Id = 21,
+                            Name = "Cafe Latte",
+                            Description = "Espresso and milk",
+                            Price = 140m,
+                            ImageUrl = "https://cdn.example.com/latte.png",
+                            IsAvailable = true,
+                            DisplayOrder = 2
+                        }
+                    ]
+                }
+            ]
+        };
+    }
+
+    private static PublicProductDetailResponse CreateProductDetail(bool isAvailable = true)
+    {
+        return new PublicProductDetailResponse
+        {
+            CafeName = "Mocca Cafe",
+            Slug = "mocca-cafe",
+            LogoImageUrl = "https://cdn.example.com/logo.png",
+            CoverImageUrl = "https://cdn.example.com/cover.png",
+            Theme = new PublicMenuThemeResponse
+            {
+                PrimaryColor = "#111827",
+                SecondaryColor = "#F9FAFB",
+                AccentColor = "#D97706",
+                BackgroundColor = "#FFFFFF",
+                TextColor = "#111111",
+                FontPreset = "SYSTEM",
+                ThemePreset = "CLASSIC"
+            },
+            CategoryId = 10,
+            CategoryName = "Kahveler",
+            ProductId = 20,
+            ProductName = "Flat White",
+            Description = "Double espresso",
+            Price = 150m,
+            ImageUrl = "https://cdn.example.com/flat-white.png",
+            IsAvailable = isAvailable
+        };
+    }
+
     private sealed class FakePublicMenuApiClient : IPublicMenuApiClient
     {
         private readonly PublicMenuRequestResult _result;
+        private readonly PublicProductDetailRequestResult _productDetailResult;
 
-        public FakePublicMenuApiClient(PublicMenuRequestResult result)
+        public FakePublicMenuApiClient(
+            PublicMenuRequestResult result,
+            PublicProductDetailRequestResult? productDetailResult = null)
         {
             _result = result;
+            _productDetailResult = productDetailResult ?? PublicProductDetailRequestResult.NotFound();
         }
 
         public string? LastSlug { get; private set; }
+
+        public string? LastProductDetailSlug { get; private set; }
+
+        public long? LastProductDetailProductId { get; private set; }
 
         public Task<PublicMenuRequestResult> GetMenuAsync(string slug, CancellationToken cancellationToken)
         {
             LastSlug = slug;
             return Task.FromResult(_result);
+        }
+
+        public Task<PublicProductDetailRequestResult> GetProductDetailAsync(
+            string slug,
+            long productId,
+            CancellationToken cancellationToken)
+        {
+            LastProductDetailSlug = slug;
+            LastProductDetailProductId = productId;
+            return Task.FromResult(_productDetailResult);
         }
     }
 

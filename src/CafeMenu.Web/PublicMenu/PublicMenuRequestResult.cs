@@ -26,3 +26,23 @@ public sealed record PublicMenuRequestResult(
         return new PublicMenuRequestResult(PublicMenuRequestStatus.Failure, null);
     }
 }
+
+public sealed record PublicProductDetailRequestResult(
+    PublicMenuRequestStatus Status,
+    PublicProductDetailResponse? Product)
+{
+    public static PublicProductDetailRequestResult Success(PublicProductDetailResponse product)
+    {
+        return new PublicProductDetailRequestResult(PublicMenuRequestStatus.Success, product);
+    }
+
+    public static PublicProductDetailRequestResult NotFound()
+    {
+        return new PublicProductDetailRequestResult(PublicMenuRequestStatus.NotFound, null);
+    }
+
+    public static PublicProductDetailRequestResult Failure()
+    {
+        return new PublicProductDetailRequestResult(PublicMenuRequestStatus.Failure, null);
+    }
+}

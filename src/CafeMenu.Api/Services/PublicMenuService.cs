@@ -20,10 +20,30 @@ public sealed class PublicMenuService : IPublicMenuService
 
     public async Task<PublicMenuResponseDto> GetMenuAsync(string slug, CancellationToken cancellationToken)
     {
-        var normalizedSlug = slug.Trim().ToLowerInvariant();
+        var normalizedSlug = NormalizeSlug(slug);
         var cafe = await _publicMenuRepository.GetPublishedMenuBySlugAsync(normalizedSlug, cancellationToken)
             ?? throw new NotFoundApplicationException("Public menu was not found.", ApplicationErrorCodes.CafeNotFound);
 
         return _publicMenuMapper.ToResponse(cafe);
+    }
+
+    public async Task<PublicMenuProductDetailResponseDto> GetProductDetailAsync(
+        string slug,
+        long productId,
+        CancellationToken cancellationToken)
+    {
+        var normalizedSlug = NormalizeSlug(slug);
+        var product = await _publicMenuRepository.GetPublishedProductDetailAsync(
+                normalizedSlug,
+                productId,
+                cancellationToken)
+            ?? throw new NotFoundApplicationException("Public product was not found.", ApplicationErrorCodes.ProductNotFound);
+
+        return _publicMenuMapper.ToProductDetailResponse(product);
+    }
+
+    private static string NormalizeSlug(string slug)
+    {
+        return slug.Trim().ToLowerInvariant();
     }
 }

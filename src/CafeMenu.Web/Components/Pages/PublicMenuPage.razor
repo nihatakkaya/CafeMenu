@@ -30,6 +30,9 @@ else if (_menu is not null)
 {
     var themeClass = PublicMenuThemeStyleBuilder.GetThemePresetClass(_menu.Theme.ThemePreset);
     var fontClass = PublicMenuThemeStyleBuilder.GetFontPresetClass(_menu.Theme.FontPreset);
+    var searchQuery = NormalizeSearchQuery(SearchQuery);
+    var isSearching = !string.IsNullOrWhiteSpace(searchQuery);
+    var searchResults = isSearching ? GetSearchResults(searchQuery).ToArray() : [];
 
     <div class="public-menu @themeClass @fontClass" style="@PublicMenuThemeStyleBuilder.BuildStyle(_menu.Theme)">
         <header class="menu-hero">
@@ -57,11 +60,60 @@ else if (_menu is not null)
             </div>
         </header>
 
+        <section class="menu-search" aria-label="Ürün arama">
+            <form method="get" action="@($"/c/{Uri.EscapeDataString(_menu.Slug)}")">
+                <label for="public-menu-search">Menüde ara</label>
+                <div class="search-control">
+                    <input id="public-menu-search"
+                           name="q"
+                           type="search"
+                           value="@searchQuery"
+                           maxlength="80"
+                           autocomplete="off"
+                           placeholder="Ürün adı veya açıklama" />
+                    <button type="submit">Ara</button>
+                    @if (isSearching)
+                    {
+                        <a href="@($"/c/{Uri.EscapeDataString(_menu.Slug)}")">Temizle</a>
+                    }
+                </div>
+            </form>
+        </section>
+
         @if (_menu.Categories.Count == 0)
         {
             <section class="empty-menu">
                 <h2>Menü hazırlanıyor</h2>
                 <p>Şu anda yayında olan kategori veya ürün bulunmuyor.</p>
+            </section>
+        }
+        else if (isSearching)
+        {
+            <section class="search-results" aria-live="polite">
+                <div class="search-heading">
+                    <h2>Arama sonuçları</h2>
+                    <p>@($"\"{searchQuery}\" için {searchResults.Length} sonuç")</p>
+                </div>
+
+                @if (searchResults.Length == 0)
+                {
+                    <div class="empty-search" data-state="no-search-results">
+                        <h3>Sonuç bulunamadı</h3>
+                        <p>Farklı bir ürün adı veya açıklama ile tekrar arayın.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="product-list">
+                        @foreach (var result in searchResults)
+                        {
+                            <PublicMenuProductCard Product="result.Product"
+                                                   Slug="@_menu.Slug"
+                                                   CategoryName="@result.CategoryName"
+                                                   ShowCategoryName="true" />
+                        }
+                    </div>
+                }
             </section>
         }
         else
@@ -100,7 +152,7 @@ else if (_menu is not null)
                             <div class="product-list">
                                 @foreach (var product in category.Products)
                                 {
-                                    <PublicMenuProductCard Product="product" />
+                                    <PublicMenuProductCard Product="product" Slug="@_menu.Slug" />
                                 }
                             </div>
                         }
@@ -117,6 +169,9 @@ else if (_menu is not null)
 
     [Parameter]
     public string Slug { get; set; } = string.Empty;
+
+    [SupplyParameterFromQuery(Name = "q")]
+    public string? SearchQuery { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -137,6 +192,33 @@ else if (_menu is not null)
             : PublicMenuPageStatus.Failure;
     }
 
+    private IEnumerable<ProductSearchResult> GetSearchResults(string query)
+    {
+        if (_menu is null)
+        {
+            return [];
+        }
+
+        return _menu.Categories
+            .SelectMany(category => category.Products
+                .Where(product => ProductMatchesSearch(product, query))
+                .Select(product => new ProductSearchResult(category.Name, product)))
+            .OrderBy(result => result.Product.DisplayOrder)
+            .ThenBy(result => result.Product.Name);
+    }
+
+    private static bool ProductMatchesSearch(PublicMenuProductResponse product, string query)
+    {
+        return product.Name.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+            (!string.IsNullOrWhiteSpace(product.Description) &&
+                product.Description.Contains(query, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string NormalizeSearchQuery(string? query)
+    {
+        return string.IsNullOrWhiteSpace(query) ? string.Empty : query.Trim();
+    }
+
     private enum PublicMenuPageStatus
     {
         Loading,
@@ -144,4 +226,6 @@ else if (_menu is not null)
         NotFound,
         Failure
     }
+
+    private sealed record ProductSearchResult(string CategoryName, PublicMenuProductResponse Product);
 }

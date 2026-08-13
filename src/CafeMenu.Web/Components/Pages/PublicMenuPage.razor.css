@@ -111,6 +111,91 @@ h1 {
     scrollbar-width: none;
 }
 
+.menu-search,
+.search-results {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+.menu-search {
+    background: color-mix(in srgb, var(--cafe-background-color) 94%, white);
+    border-bottom: 1px solid color-mix(in srgb, var(--cafe-text-color) 10%, transparent);
+}
+
+.menu-search form {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.menu-search label,
+.search-heading h2,
+.empty-search h3 {
+    color: var(--cafe-primary-color);
+    font-weight: 800;
+}
+
+.search-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.5rem;
+}
+
+.search-control input {
+    min-height: 46px;
+    min-width: 0;
+    padding: 0.72rem 0.85rem;
+    border: 1px solid color-mix(in srgb, var(--cafe-text-color) 18%, transparent);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--cafe-text-color);
+}
+
+.search-control button,
+.search-control a {
+    min-height: 46px;
+    padding: 0.72rem 0.9rem;
+    border: 0;
+    border-radius: 8px;
+    background: var(--cafe-primary-color);
+    color: #fff;
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.search-control a {
+    display: inline-grid;
+    place-items: center;
+    grid-column: 1 / -1;
+    background: color-mix(in srgb, var(--cafe-primary-color) 12%, white);
+    color: var(--cafe-primary-color);
+}
+
+.search-heading {
+    margin-bottom: 0.85rem;
+}
+
+.search-heading h2,
+.empty-search h3 {
+    margin: 0;
+}
+
+.search-heading p,
+.empty-search p {
+    margin: 0.25rem 0 0;
+    color: color-mix(in srgb, var(--cafe-text-color) 68%, transparent);
+}
+
+.empty-search {
+    display: grid;
+    justify-items: start;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 1px solid color-mix(in srgb, var(--cafe-text-color) 12%, transparent);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--cafe-secondary-color) 84%, white);
+}
+
 .category-nav::-webkit-scrollbar {
     display: none;
 }
@@ -245,9 +330,19 @@ h1 {
     }
 
     .category-nav,
+    .menu-search,
+    .search-results,
     .category-list {
         padding-left: 2rem;
         padding-right: 2rem;
+    }
+
+    .search-control {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .search-control a {
+        grid-column: auto;
     }
 
     .product-list {

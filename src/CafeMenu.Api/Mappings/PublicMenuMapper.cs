@@ -31,6 +31,28 @@ public partial class PublicMenuMapper
                 .ToArray());
     }
 
+    public PublicMenuProductDetailResponseDto ToProductDetailResponse(ProductEntity product)
+    {
+        var theme = product.Cafe.Theme is { IsPublished: true }
+            ? product.Cafe.Theme
+            : CafeThemeMapper.CreateDefaultTheme(product.CafeId);
+
+        return new PublicMenuProductDetailResponseDto(
+            product.Cafe.Name,
+            product.Cafe.Slug,
+            product.Cafe.LogoImageUrl,
+            product.Cafe.CoverImageUrl,
+            ToThemeResponse(theme),
+            product.Category.Id,
+            product.Category.Name,
+            product.Id,
+            product.Name,
+            product.Description,
+            product.Price,
+            product.ImageUrl,
+            product.IsAvailable);
+    }
+
     private static PublicMenuThemeResponseDto ToThemeResponse(CafeThemeEntity theme)
     {
         return new PublicMenuThemeResponseDto(

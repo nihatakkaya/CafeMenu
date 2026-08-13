@@ -247,6 +247,147 @@ public sealed class PublicMenuEndpointTests
         Assert.Equal(CafeThemeConstants.ClassicThemePreset, theme.GetProperty("themePreset").GetString());
     }
 
+    [Fact]
+    public async Task ProductDetail_ShouldReturnPublishedProductForMatchingCafeSlug()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafe = await SeedCafeAsync(factory, "Detail Public Cafe", "detail-public-cafe");
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Desserts", 1);
+        var product = await SeedProductAsync(factory, cafe.Id, category.Id, "Cheesecake", 1, 150m, isAvailable: false);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafe.Slug}/{product.Id}");
+        var json = await ParseAsync(response);
+        var data = json.RootElement.GetProperty("data");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(cafe.Name, data.GetProperty("cafeName").GetString());
+        Assert.Equal(cafe.Slug, data.GetProperty("slug").GetString());
+        Assert.Equal(category.Id, data.GetProperty("categoryId").GetInt64());
+        Assert.Equal(category.Name, data.GetProperty("categoryName").GetString());
+        Assert.Equal(product.Id, data.GetProperty("productId").GetInt64());
+        Assert.Equal(product.Name, data.GetProperty("productName").GetString());
+        Assert.Equal(product.Price, data.GetProperty("price").GetDecimal());
+        Assert.False(data.GetProperty("isAvailable").GetBoolean());
+    }
+
+    [Fact]
+    public async Task ProductDetail_ShouldRejectWrongCafeProductCombination()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafeA = await SeedCafeAsync(factory, "Detail Cafe A", "detail-cafe-a");
+        var cafeB = await SeedCafeAsync(factory, "Detail Cafe B", "detail-cafe-b");
+        var categoryB = await SeedCategoryAsync(factory, cafeB.Id, "Private Category", 1);
+        var productB = await SeedProductAsync(factory, cafeB.Id, categoryB.Id, "Private Product", 1, 20m);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafeA.Slug}/{productB.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProductDetail_ShouldNotLeakCrossCafeProduct()
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafeA = await SeedCafeAsync(factory, "Detail Leak Cafe A", "detail-leak-cafe-a");
+        var cafeB = await SeedCafeAsync(factory, "Detail Leak Cafe B", "detail-leak-cafe-b");
+        var categoryA = await SeedCategoryAsync(factory, cafeA.Id, "Cafe A Category", 1);
+        var categoryB = await SeedCategoryAsync(factory, cafeB.Id, "Cafe B Category", 1);
+        var productA = await SeedProductAsync(factory, cafeA.Id, categoryA.Id, "Cafe A Product", 1, 10m);
+        var productB = await SeedProductAsync(factory, cafeB.Id, categoryB.Id, "Cafe B Product", 1, 20m);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafeA.Slug}/{productA.Id}");
+        var json = await ParseAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(productA.Id, json.RootElement.GetProperty("data").GetProperty("productId").GetInt64());
+        Assert.NotEqual(productB.Id, json.RootElement.GetProperty("data").GetProperty("productId").GetInt64());
+    }
+
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public async Task ProductDetail_ShouldNotReturnInactiveUnpublishedOrDeletedCafe(
+        bool isActive,
+        bool isPublished,
+        bool isDeleted)
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafe = await SeedCafeAsync(
+            factory,
+            $"Detail Cafe {Guid.NewGuid():N}",
+            $"detail-cafe-{Guid.NewGuid():N}",
+            isActive: isActive,
+            isPublished: isPublished,
+            isDeleted: isDeleted);
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Products", 1);
+        var product = await SeedProductAsync(factory, cafe.Id, category.Id, "Hidden By Cafe", 1, 10m);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafe.Slug}/{product.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public async Task ProductDetail_ShouldNotReturnProductInHiddenUnpublishedOrDeletedCategory(
+        bool isVisible,
+        bool isPublished,
+        bool isDeleted)
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafe = await SeedCafeAsync(factory, $"Detail Category Cafe {Guid.NewGuid():N}", $"detail-category-cafe-{Guid.NewGuid():N}");
+        var category = await SeedCategoryAsync(
+            factory,
+            cafe.Id,
+            "Blocked Category",
+            1,
+            isVisible: isVisible,
+            isPublished: isPublished,
+            isDeleted: isDeleted);
+        var product = await SeedProductAsync(factory, cafe.Id, category.Id, "Blocked Product", 1, 10m);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafe.Slug}/{product.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData(false, true, false)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public async Task ProductDetail_ShouldNotReturnHiddenUnpublishedOrDeletedProduct(
+        bool isVisible,
+        bool isPublished,
+        bool isDeleted)
+    {
+        await using var factory = new CustomWebApplicationFactory();
+        var cafe = await SeedCafeAsync(factory, $"Detail Product Cafe {Guid.NewGuid():N}", $"detail-product-cafe-{Guid.NewGuid():N}");
+        var category = await SeedCategoryAsync(factory, cafe.Id, "Products", 1);
+        var product = await SeedProductAsync(
+            factory,
+            cafe.Id,
+            category.Id,
+            "Blocked Product",
+            1,
+            10m,
+            isVisible: isVisible,
+            isPublished: isPublished,
+            isDeleted: isDeleted);
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync($"/PublicMenu/GetProductDetail/{cafe.Slug}/{product.Id}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
     private static async Task<CafeEntity> SeedCafeAsync(
         CustomWebApplicationFactory factory,
         string name,
