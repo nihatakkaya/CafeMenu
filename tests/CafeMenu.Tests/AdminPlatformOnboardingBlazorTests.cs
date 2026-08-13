@@ -226,6 +226,8 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Equal("New Owner", platformClient.LastCreateUserSetupRequest?.FullName);
         Assert.Contains(SetupToken, html, StringComparison.Ordinal);
         Assert.Contains("yalniz bu basarili response sonrasinda gosterilir", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/account/setup\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain($"/account/setup?token={SetupToken}", html, StringComparison.Ordinal);
         Assert.DoesNotContain("localStorage", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sessionStorage", html, StringComparison.OrdinalIgnoreCase);
         AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "Reissue|120", "Token yeniden uret");

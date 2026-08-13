@@ -1,0 +1,150 @@
+@page "/account/setup"
+@layout AccountLayout
+@inject IAccountSetupApiClient AccountSetupApiClient
+@inject IHttpContextAccessor HttpContextAccessor
+@inject NavigationManager NavigationManager
+
+<PageTitle>Sifre Belirleme</PageTitle>
+
+<section class="account-setup-page">
+    <section class="account-setup-panel">
+        <p class="account-kicker">CafeMenu</p>
+        <h1>Sifrenizi belirleyin</h1>
+        <p class="account-summary">
+            Platform admin tarafindan verilen setup kodunu yapistirin ve yeni sifrenizi belirleyin.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <section class="@_messageCssClass" role="alert">@_message</section>
+        }
+
+        <EditForm Model="_formModel" OnValidSubmit="CompleteSetupAsync" OnInvalidSubmit="HandleInvalidSubmit" FormName="CompleteAccountSetupForm" id="CompleteAccountSetupForm" method="post">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <label>
+                Setup kodu
+                <InputText @bind-Value="_formModel.Token" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
+            </label>
+
+            <label>
+                Yeni sifre
+                <InputText @bind-Value="_formModel.Password" type="password" autocomplete="new-password" maxlength="128" />
+            </label>
+
+            <label>
+                Yeni sifre tekrari
+                <InputText @bind-Value="_formModel.ConfirmPassword" type="password" autocomplete="new-password" maxlength="128" />
+            </label>
+
+            <ul class="account-policy-list" aria-label="Sifre kurallari">
+                <li>En az 12 karakter</li>
+                <li>Buyuk harf, kucuk harf, rakam ve ozel karakter</li>
+                <li>En fazla 128 karakter</li>
+            </ul>
+
+            <button type="submit" disabled="@_isSubmitting">Hesabi hazirla</button>
+        </EditForm>
+
+        <p class="account-secondary-link">
+            Hesabiniz hazirsa <a href="/account/login">giris yapin</a>.
+        </p>
+    </section>
+</section>
+
+@code {
+    private AccountSetupFormModel _formModel = new();
+    private bool _isSubmitting;
+    private string? _message;
+    private string _messageCssClass = "account-message";
+
+    [SupplyParameterFromForm(FormName = "CompleteAccountSetupForm", Name = "_formModel")]
+    private AccountSetupFormModel? FormModel { get; set; }
+
+    protected override void OnInitialized()
+    {
+        ApplyNoStoreHeaders();
+    }
+
+    protected override void OnParametersSet()
+    {
+        _formModel = FormModel ?? new AccountSetupFormModel();
+    }
+
+    private async Task CompleteSetupAsync()
+    {
+        _isSubmitting = true;
+        ClearMessage();
+
+        var request = new AccountSetupRequest(
+            _formModel.Token.Trim(),
+            _formModel.Password,
+            _formModel.ConfirmPassword);
+
+        ClearSensitiveForm();
+
+        try
+        {
+            var result = await AccountSetupApiClient.CompleteUserSetupAsync(request, CancellationToken.None);
+            if (result.Status == AccountSetupStatus.Success)
+            {
+                NavigationManager.NavigateTo("/account/login?setup=success");
+                return;
+            }
+
+            SetErrorMessage(GetErrorMessage(result.Status));
+        }
+        finally
+        {
+            _isSubmitting = false;
+            ClearSensitiveForm();
+        }
+    }
+
+    private void HandleInvalidSubmit(EditContext editContext)
+    {
+        ClearSensitiveForm();
+        SetErrorMessage("Form alanlarini kontrol edin. Sifreler ayni olmali ve sifre kurallarini karsilamalidir.");
+    }
+
+    private void ApplyNoStoreHeaders()
+    {
+        var response = HttpContextAccessor.HttpContext?.Response;
+        if (response is null || response.HasStarted)
+        {
+            return;
+        }
+
+        response.Headers.CacheControl = "no-store";
+        response.Headers.Pragma = "no-cache";
+        response.Headers.Expires = "0";
+    }
+
+    private void ClearSensitiveForm()
+    {
+        _formModel = new AccountSetupFormModel();
+    }
+
+    private void SetErrorMessage(string message)
+    {
+        _message = message;
+        _messageCssClass = "account-message account-message-error";
+    }
+
+    private void ClearMessage()
+    {
+        _message = null;
+        _messageCssClass = "account-message";
+    }
+
+    private static string GetErrorMessage(AccountSetupStatus status)
+    {
+        return status switch
+        {
+            AccountSetupStatus.InvalidToken => "Setup kodu gecersiz, suresi dolmus veya daha once kullanilmis olabilir.",
+            AccountSetupStatus.ValidationError => "Sifre kurallarini kontrol edin ve tekrar deneyin.",
+            _ => "Sifre belirleme islemi su anda tamamlanamiyor. Lutfen daha sonra tekrar deneyin."
+        };
+    }
+}

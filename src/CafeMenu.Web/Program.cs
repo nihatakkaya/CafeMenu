@@ -1,4 +1,5 @@
 using CafeMenu.Web.Components;
+using CafeMenu.Web.AccountSetup;
 using CafeMenu.Web.AdminBranding;
 using CafeMenu.Web.AdminCafe;
 using CafeMenu.Web.AdminCafeSettings;
@@ -21,6 +22,8 @@ builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClie
 builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
 builder.Services.AddScoped<IAdminPlatformApiClient, AdminPlatformApiClient>();
 builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
+builder.Services.AddScoped<IAccountSetupApiClient, AccountSetupApiClient>();
+builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName);
 builder.Services.AddOptions<PublicMenuApiOptions>()
     .Bind(builder.Configuration.GetSection("PublicApi"))
     .ValidateDataAnnotations()

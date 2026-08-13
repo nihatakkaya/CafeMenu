@@ -23,8 +23,9 @@ public static class AdminAuthEndpointRouteBuilderExtensions
     {
         var tokens = antiforgery.GetAndStoreTokens(httpContext);
         var error = httpContext.Request.Query["error"].ToString();
+        var setup = httpContext.Request.Query["setup"].ToString();
         var returnUrl = GetSafeReturnUrl(httpContext.Request.Query["returnUrl"].ToString());
-        var html = BuildLoginPageHtml(tokens.FormFieldName, tokens.RequestToken ?? string.Empty, error, returnUrl);
+        var html = BuildLoginPageHtml(tokens.FormFieldName, tokens.RequestToken ?? string.Empty, error, setup, returnUrl);
 
         return Results.Content(html, "text/html; charset=utf-8");
     }
@@ -108,6 +109,7 @@ public static class AdminAuthEndpointRouteBuilderExtensions
         string formFieldName,
         string requestToken,
         string? error,
+        string? setup,
         string returnUrl)
     {
         var encodedFieldName = WebUtility.HtmlEncode(formFieldName);
@@ -115,6 +117,9 @@ public static class AdminAuthEndpointRouteBuilderExtensions
         var encodedReturnUrl = WebUtility.HtmlEncode(returnUrl);
         var errorHtml = string.Equals(error, "invalid", StringComparison.Ordinal)
             ? "<p class=\"validation-message\" role=\"alert\">Email or password is invalid.</p>"
+            : string.Empty;
+        var setupSuccessHtml = string.Equals(setup, "success", StringComparison.Ordinal)
+            ? "<p class=\"validation-message\" role=\"status\">Hesabiniz hazir. Simdi giris yapabilirsiniz.</p>"
             : string.Empty;
 
         return $$"""
@@ -130,6 +135,7 @@ public static class AdminAuthEndpointRouteBuilderExtensions
         <section class="account-panel">
             <h1>Admin Login</h1>
             {{errorHtml}}
+            {{setupSuccessHtml}}
             <form method="post" action="/account/login">
                 <input name="{{encodedFieldName}}" type="hidden" value="{{encodedToken}}" />
                 <input name="ReturnUrl" type="hidden" value="{{encodedReturnUrl}}" />
