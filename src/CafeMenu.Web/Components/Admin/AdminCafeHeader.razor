@@ -41,6 +41,7 @@
     <a class="@GetNavClass(AdminCafeSection.Categories)" href="@CategoriesUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Categories)">Kategoriler</a>
     <a class="@GetNavClass(AdminCafeSection.Products)" href="@ProductsUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Products)">Ürünler</a>
     <a class="@GetNavClass(AdminCafeSection.Branding)" href="@BrandingUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Branding)">Görünüm</a>
+    <a class="@GetNavClass(AdminCafeSection.Qr)" href="@QrUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Qr)">QR Kod</a>
     <a class="admin-cafe-nav-link" href="@PublicMenuUrl" target="_blank" rel="noopener noreferrer">Public Menü</a>
     <a class="admin-cafe-nav-link admin-cafe-nav-link-secondary" href="/admin">Cafe değiştir</a>
 </nav>
@@ -67,6 +68,8 @@
     private string ProductsUrl => $"/admin/cafes/{Cafe.Id}/products";
 
     private string BrandingUrl => $"/admin/cafes/{Cafe.Id}/branding";
+
+    private string QrUrl => $"/admin/cafes/{Cafe.Id}/qr";
 
     private string PublicMenuUrl => $"/c/{Cafe.Slug}";
 

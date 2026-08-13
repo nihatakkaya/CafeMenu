@@ -51,6 +51,10 @@
                 <span>Görünüm</span>
                 <p>Logo, kapak referansı, tema, renkler ve karşılama metinlerini düzenleyin.</p>
             </a>
+            <a class="admin-shell-card" href="@($"/admin/cafes/{_cafe.Id}/qr")">
+                <span>QR Kod</span>
+                <p>Public menü adresini QR olarak önizleyin ve baskı için indirin.</p>
+            </a>
             <a class="admin-shell-card" href="@($"/c/{_cafe.Slug}")" target="_blank" rel="noopener noreferrer">
                 <span>Public Menü</span>
                 <p>Yayınlanan müşteri menüsünü mevcut slug ile açın.</p>
@@ -58,7 +62,7 @@
         </section>
 
         <section class="admin-shell-panel">
-            <p>QR yönetimi ve dashboard analytics sonraki fazlarda eklenecek.</p>
+            <p>Dashboard analytics sonraki fazlarda eklenecek.</p>
             <p class="admin-security-note">Bu ekran route bilgisini yalnız seçim bağlamı olarak kullanır. Gerçek yetkilendirme her backend API çağrısında tekrar yapılacaktır.</p>
         </section>
     }

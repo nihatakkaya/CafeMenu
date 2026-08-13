@@ -6,5 +6,6 @@ public enum AdminCafeSection
     Settings,
     Categories,
     Products,
-    Branding
+    Branding,
+    Qr
 }

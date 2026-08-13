@@ -6,6 +6,7 @@ using CafeMenu.Web.AdminCafeSettings;
 using CafeMenu.Web.AdminCategory;
 using CafeMenu.Web.AdminPlatform;
 using CafeMenu.Web.AdminProduct;
+using CafeMenu.Web.AdminQr;
 using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.PublicMenu;
 using Microsoft.Extensions.Options;
@@ -22,8 +23,16 @@ builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClie
 builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
 builder.Services.AddScoped<IAdminPlatformApiClient, AdminPlatformApiClient>();
 builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
+builder.Services.AddScoped<IAdminQrCodeRenderer, AdminQrCodeRenderer>();
+builder.Services.AddScoped<IAdminQrCodeService, AdminQrCodeService>();
+builder.Services.AddScoped<IAdminQrUrlBuilder, AdminQrUrlBuilder>();
 builder.Services.AddScoped<IAccountSetupApiClient, AccountSetupApiClient>();
 builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName);
+builder.Services.AddOptions<PublicMenuQrOptions>()
+    .Bind(builder.Configuration.GetSection("PublicMenu"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<PublicMenuQrOptions>, AdminQrOptionsValidator>();
 builder.Services.AddOptions<PublicMenuApiOptions>()
     .Bind(builder.Configuration.GetSection("PublicApi"))
     .ValidateDataAnnotations()
@@ -54,6 +63,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapAdminAuthEndpoints();
+app.MapAdminQrEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

@@ -32,7 +32,8 @@ public sealed class AdminPanelIntegrationShellTests
             { "/admin/cafes/42/settings", "/admin/cafes/42/settings", "Cafe Ayarları" },
             { "/admin/cafes/42/categories", "/admin/cafes/42/categories", "Kategoriler" },
             { "/admin/cafes/42/products", "/admin/cafes/42/products", "Ürünler" },
-            { "/admin/cafes/42/branding", "/admin/cafes/42/branding", "Görünüm" }
+            { "/admin/cafes/42/branding", "/admin/cafes/42/branding", "Görünüm" },
+            { "/admin/cafes/42/qr", "/admin/cafes/42/qr", "QR Kod" }
         };
 
     [Theory]
@@ -67,6 +68,7 @@ public sealed class AdminPanelIntegrationShellTests
         Assert.Contains("href=\"/admin/cafes/42/categories\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/42/products\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/42/branding\"", html, StringComparison.Ordinal);
+        Assert.Contains("href=\"/admin/cafes/42/qr\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/c/integration-cafe\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin\"", html, StringComparison.Ordinal);
         AssertActiveNavigation(html, activeHref, activeLabel);
@@ -97,6 +99,7 @@ public sealed class AdminPanelIntegrationShellTests
         Assert.Contains("Kategoriler", html, StringComparison.Ordinal);
         Assert.Contains("Ürünler", html, StringComparison.Ordinal);
         Assert.Contains("Görünüm", html, StringComparison.Ordinal);
+        Assert.Contains("QR Kod", html, StringComparison.Ordinal);
         Assert.Contains("Public Menü", html, StringComparison.Ordinal);
         Assert.Equal(0, categoryClient.GetCategoriesCallCount);
         Assert.Equal(0, productClient.GetProductsCallCount);
