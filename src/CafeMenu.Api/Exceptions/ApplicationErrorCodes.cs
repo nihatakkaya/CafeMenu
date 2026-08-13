@@ -18,4 +18,8 @@ public static class ApplicationErrorCodes
     public const string CafeMembershipNotFound = "MEM001";
     public const string CafeMembershipAlreadyExists = "MEM002";
     public const string TenantAccessForbidden = "TENANT001";
+    public const string ImageUnsupportedFormat = "IMG001";
+    public const string ImageInvalid = "IMG002";
+    public const string ImageTooLarge = "IMG003";
+    public const string ImageStorageFailed = "IMG004";
 }

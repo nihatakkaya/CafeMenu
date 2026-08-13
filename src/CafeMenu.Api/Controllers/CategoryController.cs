@@ -5,6 +5,7 @@ using CafeMenu.Api.DTOs.Requests;
 using CafeMenu.Api.DTOs.Responses;
 using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Services;
+using CafeMenu.Api.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -133,6 +134,41 @@ public sealed class CategoryController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<CategoryResponseDto>>.SuccessResponse(response, "Categories reordered successfully."));
     }
 
+    [HttpPost("UploadCategoryImage/{id:long}")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CategoryResponseDto>>> UploadCategoryImage(
+        long id,
+        [FromForm] ImageUploadRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = OpenImageStream(request);
+        var response = await _categoryService.UploadCategoryImageAsync(
+            GetCurrentAppUserId(),
+            id,
+            ToImageUploadInput(request.File!, stream),
+            cancellationToken);
+
+        return Ok(ApiResponse<CategoryResponseDto>.SuccessResponse(response, "Category image uploaded successfully."));
+    }
+
+    [HttpPost("RemoveCategoryImage/{id:long}")]
+    [ProducesResponseType(typeof(ApiResponse<CategoryResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CategoryResponseDto>>> RemoveCategoryImage(
+        long id,
+        CancellationToken cancellationToken)
+    {
+        var response = await _categoryService.RemoveCategoryImageAsync(GetCurrentAppUserId(), id, cancellationToken);
+        return Ok(ApiResponse<CategoryResponseDto>.SuccessResponse(response, "Category image removed successfully."));
+    }
+
     private long GetCurrentAppUserId()
     {
         var appUserIdValue = User.FindFirstValue("app_user_id")
@@ -145,5 +181,17 @@ public sealed class CategoryController : ControllerBase
         }
 
         return appUserId;
+    }
+
+    private static Stream OpenImageStream(ImageUploadRequest request)
+    {
+        return request.File is null
+            ? throw new BadRequestApplicationException("Image file is required.", ApplicationErrorCodes.ImageInvalid)
+            : request.File.OpenReadStream();
+    }
+
+    private static ImageUploadInput ToImageUploadInput(IFormFile file, Stream stream)
+    {
+        return new ImageUploadInput(file.FileName, file.ContentType, file.Length, stream);
     }
 }

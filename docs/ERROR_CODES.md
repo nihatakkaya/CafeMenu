@@ -86,6 +86,17 @@ The codes are technology-independent and are used consistently by the ASP.NET Co
 
 ---
 
+## Image Upload
+
+| Code   | Description              |
+| ------ | ------------------------ |
+| IMG001 | Unsupported image format |
+| IMG002 | Invalid image content    |
+| IMG003 | Image too large          |
+| IMG004 | Image storage failed     |
+
+---
+
 ## System
 
 | Code   | Description           |

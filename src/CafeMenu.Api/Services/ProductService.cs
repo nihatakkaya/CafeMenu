@@ -5,6 +5,7 @@ using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
+using CafeMenu.Api.Storage;
 
 namespace CafeMenu.Api.Services;
 
@@ -17,6 +18,7 @@ public sealed class ProductService : IProductService
     private readonly ICafeRepository _cafeRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITenantAuthorizationService _tenantAuthorizationService;
+    private readonly IImageStorage _imageStorage;
     private readonly ProductMapper _productMapper;
     private readonly ILogger<ProductService> _logger;
 
@@ -26,6 +28,7 @@ public sealed class ProductService : IProductService
         ICafeRepository cafeRepository,
         IUnitOfWork unitOfWork,
         ITenantAuthorizationService tenantAuthorizationService,
+        IImageStorage imageStorage,
         ProductMapper productMapper,
         ILogger<ProductService> logger)
     {
@@ -34,6 +37,7 @@ public sealed class ProductService : IProductService
         _cafeRepository = cafeRepository;
         _unitOfWork = unitOfWork;
         _tenantAuthorizationService = tenantAuthorizationService;
+        _imageStorage = imageStorage;
         _productMapper = productMapper;
         _logger = logger;
     }
@@ -248,6 +252,61 @@ public sealed class ProductService : IProductService
             .ToArray();
     }
 
+    public async Task<ProductResponseDto> UploadProductImageAsync(
+        long appUserId,
+        long productId,
+        ImageUploadInput input,
+        CancellationToken cancellationToken)
+    {
+        var product = await GetProductOrThrowAsync(productId, cancellationToken);
+        await EnsureCafeProductManagementAccessAsync(appUserId, product.CafeId, cancellationToken);
+
+        var oldImageUrl = product.ImageUrl;
+        StoredImage? storedImage = null;
+
+        try
+        {
+            storedImage = await _imageStorage.StoreAsync(input, ImageStorageFolder.Products, cancellationToken);
+            product.ImageUrl = storedImage.PublicUrl;
+            product.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (storedImage is not null)
+            {
+                await TryDeleteManagedImageAsync(storedImage.PublicUrl, cancellationToken);
+            }
+
+            throw;
+        }
+
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation("Product {ProductId} image uploaded for cafe {CafeId}", product.Id, product.CafeId);
+
+        return _productMapper.ToResponse(product);
+    }
+
+    public async Task<ProductResponseDto> RemoveProductImageAsync(
+        long appUserId,
+        long productId,
+        CancellationToken cancellationToken)
+    {
+        var product = await GetProductOrThrowAsync(productId, cancellationToken);
+        await EnsureCafeProductManagementAccessAsync(appUserId, product.CafeId, cancellationToken);
+
+        var oldImageUrl = product.ImageUrl;
+        product.ImageUrl = null;
+        product.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation("Product {ProductId} image removed for cafe {CafeId}", product.Id, product.CafeId);
+
+        return _productMapper.ToResponse(product);
+    }
+
     private async Task EnsureCafeProductManagementAccessAsync(long appUserId, long cafeId, CancellationToken cancellationToken)
     {
         await _tenantAuthorizationService.EnsureCafeAccessAsync(
@@ -307,5 +366,21 @@ public sealed class ProductService : IProductService
     private static string? NormalizeOptionalText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private async Task TryDeleteManagedImageAsync(string? imageUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _imageStorage.DeleteIfManagedAsync(imageUrl, cancellationToken);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Managed product image cleanup failed.");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Managed product image cleanup failed.");
+        }
     }
 }

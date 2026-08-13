@@ -6,6 +6,11 @@
 # dotenv files
 .env
 
+# Local runtime media storage
+/.local-media/
+/media/
+/App_Data/media/
+
 # User-specific files
 *.rsuser
 *.suo

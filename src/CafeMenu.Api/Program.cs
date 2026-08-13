@@ -1,5 +1,6 @@
 using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Configuration;
+using CafeMenu.Api.Storage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +32,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapImageStorageEndpoints();
 app.MapControllers();
 
 app.Run();

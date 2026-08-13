@@ -201,6 +201,7 @@
                                                     }
                                                     @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
                                                     {
+                                                        <img class="admin-image-preview" src="@product.ImageUrl" alt="" loading="lazy" />
                                                         <a class="admin-image-reference" href="@product.ImageUrl" target="_blank" rel="noopener noreferrer">Görsel referansı</a>
                                                     }
                                                 </div>
@@ -236,6 +237,23 @@
                                                     <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildMoveAction(product, 1)" disabled="@IsMoveDownDisabled(product)">Aşağı</button>
                                                     <button class="admin-danger-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildProductAction("ConfirmDelete", product.Id)" disabled="@_isMutating">Sil</button>
                                                 </div>
+                                                <div class="admin-image-actions">
+                                                    <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/products/{product.Id}/upload-image")">
+                                                        <AntiforgeryToken />
+                                                        <label>
+                                                            Ürün görseli
+                                                            <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                                                        </label>
+                                                        <button class="admin-primary-button" type="submit" disabled="@_isMutating">Görsel yükle</button>
+                                                    </form>
+                                                    @if (!string.IsNullOrWhiteSpace(product.ImageUrl))
+                                                    {
+                                                        <form method="post" action="@($"/admin/cafes/{_cafe.Id}/products/{product.Id}/remove-image")">
+                                                            <AntiforgeryToken />
+                                                            <button class="admin-danger-button" type="submit" disabled="@_isMutating">Görseli kaldır</button>
+                                                        </form>
+                                                    }
+                                                </div>
                                             }
                                         }
                                     </article>
@@ -254,6 +272,9 @@
 
     [Parameter]
     public long CafeId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imageUpload")]
+    private string? ImageUploadResult { get; set; }
 
     private bool _isLoading = true;
     private bool _isMutating;
@@ -672,6 +693,23 @@
         _categories = [];
         _products = [];
         ClearMessage();
+        ApplyImageUploadMessage();
+    }
+
+    private void ApplyImageUploadMessage()
+    {
+        switch (ImageUploadResult)
+        {
+            case "success":
+                SetSuccessMessage("Görsel işlemi tamamlandı.");
+                break;
+            case "validation":
+                SetErrorMessage("Görsel JPEG, PNG veya WebP formatında ve izin verilen boyutta olmalıdır.");
+                break;
+            case "failure":
+                SetErrorMessage("Görsel işlemi tamamlanamadı.");
+                break;
+        }
     }
 
     private void SetMutationFailureMessage(AdminProductRequestStatus status, string fallbackMessage)

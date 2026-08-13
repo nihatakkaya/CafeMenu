@@ -5,6 +5,7 @@ using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
+using CafeMenu.Api.Storage;
 
 namespace CafeMenu.Api.Services;
 
@@ -16,6 +17,7 @@ public sealed class CafeBrandingService : ICafeBrandingService
     private readonly ICafeThemeRepository _cafeThemeRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITenantAuthorizationService _tenantAuthorizationService;
+    private readonly IImageStorage _imageStorage;
     private readonly CafeThemeMapper _cafeThemeMapper;
     private readonly ILogger<CafeBrandingService> _logger;
 
@@ -24,6 +26,7 @@ public sealed class CafeBrandingService : ICafeBrandingService
         ICafeThemeRepository cafeThemeRepository,
         IUnitOfWork unitOfWork,
         ITenantAuthorizationService tenantAuthorizationService,
+        IImageStorage imageStorage,
         CafeThemeMapper cafeThemeMapper,
         ILogger<CafeBrandingService> logger)
     {
@@ -31,6 +34,7 @@ public sealed class CafeBrandingService : ICafeBrandingService
         _cafeThemeRepository = cafeThemeRepository;
         _unitOfWork = unitOfWork;
         _tenantAuthorizationService = tenantAuthorizationService;
+        _imageStorage = imageStorage;
         _cafeThemeMapper = cafeThemeMapper;
         _logger = logger;
     }
@@ -44,6 +48,145 @@ public sealed class CafeBrandingService : ICafeBrandingService
         var theme = await _cafeThemeRepository.GetByCafeIdAsync(cafe.Id, cancellationToken);
 
         return _cafeThemeMapper.ToResponse(cafe, theme);
+    }
+
+    public Task<CafeBrandingResponseDto> UploadLogoImageAsync(
+        long appUserId,
+        long cafeId,
+        ImageUploadInput input,
+        CancellationToken cancellationToken)
+    {
+        return ReplaceCafeImageAsync(
+            appUserId,
+            cafeId,
+            input,
+            ImageStorageFolder.CafeLogos,
+            cafe => cafe.LogoImageUrl,
+            (cafe, imageUrl) => cafe.LogoImageUrl = imageUrl,
+            "Cafe logo uploaded for cafe {CafeId}",
+            cancellationToken);
+    }
+
+    public Task<CafeBrandingResponseDto> UploadCoverImageAsync(
+        long appUserId,
+        long cafeId,
+        ImageUploadInput input,
+        CancellationToken cancellationToken)
+    {
+        return ReplaceCafeImageAsync(
+            appUserId,
+            cafeId,
+            input,
+            ImageStorageFolder.CafeCovers,
+            cafe => cafe.CoverImageUrl,
+            (cafe, imageUrl) => cafe.CoverImageUrl = imageUrl,
+            "Cafe cover uploaded for cafe {CafeId}",
+            cancellationToken);
+    }
+
+    public Task<CafeBrandingResponseDto> RemoveLogoImageAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        return RemoveCafeImageAsync(
+            appUserId,
+            cafeId,
+            cafe => cafe.LogoImageUrl,
+            (cafe, imageUrl) => cafe.LogoImageUrl = imageUrl,
+            "Cafe logo removed for cafe {CafeId}",
+            cancellationToken);
+    }
+
+    public Task<CafeBrandingResponseDto> RemoveCoverImageAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        return RemoveCafeImageAsync(
+            appUserId,
+            cafeId,
+            cafe => cafe.CoverImageUrl,
+            (cafe, imageUrl) => cafe.CoverImageUrl = imageUrl,
+            "Cafe cover removed for cafe {CafeId}",
+            cancellationToken);
+    }
+
+    private async Task<CafeBrandingResponseDto> ReplaceCafeImageAsync(
+        long appUserId,
+        long cafeId,
+        ImageUploadInput input,
+        ImageStorageFolder folder,
+        Func<CafeEntity, string?> getCurrentImageUrl,
+        Action<CafeEntity, string?> setImageUrl,
+        string logMessage,
+        CancellationToken cancellationToken)
+    {
+        var cafe = await EnsureCafeBrandingManagementAccessAsync(appUserId, cafeId, cancellationToken);
+        var oldImageUrl = getCurrentImageUrl(cafe);
+        StoredImage? storedImage = null;
+
+        try
+        {
+            storedImage = await _imageStorage.StoreAsync(input, folder, cancellationToken);
+            setImageUrl(cafe, storedImage.PublicUrl);
+            cafe.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (storedImage is not null)
+            {
+                await TryDeleteManagedImageAsync(storedImage.PublicUrl, cancellationToken);
+            }
+
+            throw;
+        }
+
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation(logMessage, cafe.Id);
+
+        var theme = await _cafeThemeRepository.GetByCafeIdAsync(cafe.Id, cancellationToken);
+        return _cafeThemeMapper.ToResponse(cafe, theme);
+    }
+
+    private async Task<CafeBrandingResponseDto> RemoveCafeImageAsync(
+        long appUserId,
+        long cafeId,
+        Func<CafeEntity, string?> getCurrentImageUrl,
+        Action<CafeEntity, string?> setImageUrl,
+        string logMessage,
+        CancellationToken cancellationToken)
+    {
+        var cafe = await EnsureCafeBrandingManagementAccessAsync(appUserId, cafeId, cancellationToken);
+        var oldImageUrl = getCurrentImageUrl(cafe);
+
+        setImageUrl(cafe, null);
+        cafe.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation(logMessage, cafe.Id);
+
+        var theme = await _cafeThemeRepository.GetByCafeIdAsync(cafe.Id, cancellationToken);
+        return _cafeThemeMapper.ToResponse(cafe, theme);
+    }
+
+    private async Task TryDeleteManagedImageAsync(string? imageUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _imageStorage.DeleteIfManagedAsync(imageUrl, cancellationToken);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Managed cafe branding image cleanup failed.");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Managed cafe branding image cleanup failed.");
+        }
     }
 
     public async Task<CafeBrandingResponseDto> UpdateCafeBrandingAsync(

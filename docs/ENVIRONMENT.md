@@ -56,6 +56,11 @@ Jwt__Issuer=
 Jwt__Audience=
 Jwt__AccessTokenExpirationMinutes=
 Jwt__RefreshTokenExpirationDays=
+
+ImageStorage__Provider=Local
+ImageStorage__LocalRoot=/var/cafemenu/media
+ImageStorage__PublicBaseUrl=https://example.com/media
+ImageStorage__MaxFileSizeBytes=5242880
 ```
 
 If the Docker configuration uses separate database variables, they may be defined as:
@@ -96,3 +101,4 @@ Do not commit secret-bearing `.env` files.
 * Use environment variables, .NET User Secrets or deployment secret stores for secrets.
 * Keep Docker Compose environment-variable names consistent with ASP.NET Core configuration.
 * Do not log resolved secret values at startup.
+* Store local uploaded media outside the source tree and serve it only through the managed media endpoint.

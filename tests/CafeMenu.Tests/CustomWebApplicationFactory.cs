@@ -23,7 +23,11 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
         {
             configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=cafemenu_test;Username=test;Password=test"
+                ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=cafemenu_test;Username=test;Password=test",
+                ["ImageStorage:Provider"] = "Local",
+                ["ImageStorage:LocalRoot"] = Path.Combine(Path.GetTempPath(), "cafemenu-tests-media", _databaseName),
+                ["ImageStorage:PublicBaseUrl"] = "http://localhost/media",
+                ["ImageStorage:MaxFileSizeBytes"] = "5242880"
             });
         });
 

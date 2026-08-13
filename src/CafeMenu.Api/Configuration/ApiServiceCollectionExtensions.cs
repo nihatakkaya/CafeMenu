@@ -5,8 +5,11 @@ using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
 using CafeMenu.Api.Services;
+using CafeMenu.Api.Storage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Microsoft.OpenApi;
 
 namespace CafeMenu.Api.Configuration;
@@ -48,6 +51,8 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IPublicMenuRepository, PublicMenuRepository>();
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IImageProcessor, ImageProcessor>();
+        services.AddScoped<IImageStorage, LocalImageStorage>();
         services.AddScoped<IPasswordHasher, BCryptPasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<AppUserMapper>();
@@ -68,6 +73,14 @@ public static class ApiServiceCollectionExtensions
         services.AddScoped<IPublicMenuService, PublicMenuService>();
         services.AddSingleton<IConsolePasswordReader, ConsolePasswordReader>();
         services.AddSingleton<PlatformAdminBootstrapRunner>();
+        services.AddSingleton<IValidateOptions<ImageStorageOptions>, ImageStorageOptionsValidator>();
+        services.AddSingleton<IConfigureOptions<FormOptions>, ImageStorageFormOptionsSetup>();
+
+        services.AddOptions<ImageStorageOptions>()
+            .Configure<IConfiguration>((options, configuration) =>
+                configuration.GetSection(ImageStorageOptions.SectionName).Bind(options))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         services.AddOptions<UserSetupOptions>()
             .Configure<IConfiguration>((options, configuration) =>

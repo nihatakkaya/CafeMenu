@@ -108,6 +108,8 @@ Validate:
 
 Never trust a client-supplied filename as a safe server path.
 
+Uploaded menu images must use server-generated opaque filenames and be stored outside the source tree. For V1, accepted image formats are JPEG, PNG and WebP only. SVG, GIF and unknown formats must be rejected. Image validation must check extension, content type and file signature, and accepted images should be decoded and re-encoded before storage to avoid preserving unsafe metadata.
+
 ---
 
 ## SQL Injection

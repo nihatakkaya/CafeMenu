@@ -57,6 +57,65 @@
                 </section>
             }
 
+            <section class="admin-panel admin-image-panel">
+                <h2>Görseller</h2>
+                <div class="admin-image-grid">
+                    <article class="admin-image-item">
+                        <h3>Logo</h3>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.LogoImageUrl))
+                        {
+                            <img class="admin-image-preview" src="@_branding.LogoImageUrl" alt="Cafe logosu" />
+                        }
+                        else
+                        {
+                            <p>Henüz logo yok.</p>
+                        }
+                        <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/branding/upload-logo")">
+                            <AntiforgeryToken />
+                            <label>
+                                Logo yükle
+                                <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                            </label>
+                            <button class="admin-primary-button" type="submit">Yükle</button>
+                        </form>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.LogoImageUrl))
+                        {
+                            <form method="post" action="@($"/admin/cafes/{_cafe.Id}/branding/remove-logo")">
+                                <AntiforgeryToken />
+                                <button class="admin-danger-button" type="submit">Logoyu kaldır</button>
+                            </form>
+                        }
+                    </article>
+
+                    <article class="admin-image-item">
+                        <h3>Kapak</h3>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.CoverImageUrl))
+                        {
+                            <img class="admin-image-preview admin-image-preview-wide" src="@_branding.CoverImageUrl" alt="Cafe kapak görseli" />
+                        }
+                        else
+                        {
+                            <p>Henüz kapak görseli yok.</p>
+                        }
+                        <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/branding/upload-cover")">
+                            <AntiforgeryToken />
+                            <label>
+                                Kapak yükle
+                                <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                            </label>
+                            <button class="admin-primary-button" type="submit">Yükle</button>
+                        </form>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.CoverImageUrl))
+                        {
+                            <form method="post" action="@($"/admin/cafes/{_cafe.Id}/branding/remove-cover")">
+                                <AntiforgeryToken />
+                                <button class="admin-danger-button" type="submit">Kapak görselini kaldır</button>
+                            </form>
+                        }
+                    </article>
+                </div>
+            </section>
+
             <div class="admin-branding-layout">
                 <section class="admin-panel">
                     <h2>Görünüm formu</h2>
@@ -173,6 +232,9 @@
 @code {
     [Parameter]
     public long CafeId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imageUpload")]
+    private string? ImageUploadResult { get; set; }
 
     private bool _isLoading = true;
     private bool _isSaving;
@@ -301,6 +363,23 @@
         _cafe = null;
         _branding = null;
         ClearMessage();
+        ApplyImageUploadMessage();
+    }
+
+    private void ApplyImageUploadMessage()
+    {
+        switch (ImageUploadResult)
+        {
+            case "success":
+                SetSuccessMessage("Görsel işlemi tamamlandı.");
+                break;
+            case "validation":
+                SetErrorMessage("Görsel JPEG, PNG veya WebP formatında ve izin verilen boyutta olmalıdır.");
+                break;
+            case "failure":
+                SetErrorMessage("Görsel işlemi tamamlanamadı.");
+                break;
+        }
     }
 
     private void SetSuccessMessage(string message)

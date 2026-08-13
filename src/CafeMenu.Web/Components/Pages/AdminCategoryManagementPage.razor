@@ -144,6 +144,7 @@
                                         }
                                         @if (!string.IsNullOrWhiteSpace(category.ImageUrl))
                                         {
+                                            <img class="admin-image-preview" src="@category.ImageUrl" alt="" loading="lazy" />
                                             <a class="admin-image-reference" href="@category.ImageUrl" target="_blank" rel="noopener noreferrer">Görsel referansı</a>
                                         }
                                     </div>
@@ -174,6 +175,23 @@
                                         <button class="admin-secondary-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildMoveAction(category, 1)" disabled="@IsMoveDownDisabled(category)">Aşağı</button>
                                         <button class="admin-danger-button" type="submit" form="CategoryActionForm" name="_categoryActionModel.Action" value="@BuildCategoryAction("ConfirmDelete", category.Id)" disabled="@_isMutating">Sil</button>
                                     </div>
+                                    <div class="admin-image-actions">
+                                        <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/categories/{category.Id}/upload-image")">
+                                            <AntiforgeryToken />
+                                            <label>
+                                                Kategori görseli
+                                                <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                                            </label>
+                                            <button class="admin-primary-button" type="submit" disabled="@_isMutating">Görsel yükle</button>
+                                        </form>
+                                        @if (!string.IsNullOrWhiteSpace(category.ImageUrl))
+                                        {
+                                            <form method="post" action="@($"/admin/cafes/{_cafe.Id}/categories/{category.Id}/remove-image")">
+                                                <AntiforgeryToken />
+                                                <button class="admin-danger-button" type="submit" disabled="@_isMutating">Görseli kaldır</button>
+                                            </form>
+                                        }
+                                    </div>
                                 }
                             }
                         </article>
@@ -187,6 +205,9 @@
 @code {
     [Parameter]
     public long CafeId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imageUpload")]
+    private string? ImageUploadResult { get; set; }
 
     private bool _isLoading = true;
     private bool _isMutating;
@@ -541,6 +562,23 @@
         _cafe = null;
         _categories = [];
         ClearMessage();
+        ApplyImageUploadMessage();
+    }
+
+    private void ApplyImageUploadMessage()
+    {
+        switch (ImageUploadResult)
+        {
+            case "success":
+                SetSuccessMessage("Görsel işlemi tamamlandı.");
+                break;
+            case "validation":
+                SetErrorMessage("Görsel JPEG, PNG veya WebP formatında ve izin verilen boyutta olmalıdır.");
+                break;
+            case "failure":
+                SetErrorMessage("Görsel işlemi tamamlanamadı.");
+                break;
+        }
     }
 
     private void SetMutationFailureMessage(AdminCategoryRequestStatus status, string fallbackMessage)

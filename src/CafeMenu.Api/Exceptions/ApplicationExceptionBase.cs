@@ -9,6 +9,13 @@ public abstract class ApplicationExceptionBase : Exception
         ErrorCode = errorCode;
     }
 
+    protected ApplicationExceptionBase(string message, int statusCode, string? errorCode, Exception innerException)
+        : base(message, innerException)
+    {
+        StatusCode = statusCode;
+        ErrorCode = errorCode;
+    }
+
     public int StatusCode { get; }
 
     public string? ErrorCode { get; }

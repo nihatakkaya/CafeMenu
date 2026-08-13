@@ -8,6 +8,7 @@ using CafeMenu.Web.AdminPlatform;
 using CafeMenu.Web.AdminProduct;
 using CafeMenu.Web.AdminQr;
 using CafeMenu.Web.AdminAuth;
+using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.PublicMenu;
 using Microsoft.Extensions.Options;
 
@@ -26,6 +27,7 @@ builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
 builder.Services.AddScoped<IAdminQrCodeRenderer, AdminQrCodeRenderer>();
 builder.Services.AddScoped<IAdminQrCodeService, AdminQrCodeService>();
 builder.Services.AddScoped<IAdminQrUrlBuilder, AdminQrUrlBuilder>();
+builder.Services.AddScoped<IAdminImageUploadApiClient, AdminImageUploadApiClient>();
 builder.Services.AddScoped<IAccountSetupApiClient, AccountSetupApiClient>();
 builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName);
 builder.Services.AddOptions<PublicMenuQrOptions>()
@@ -63,6 +65,7 @@ app.UseAntiforgery();
 
 app.MapStaticAssets();
 app.MapAdminAuthEndpoints();
+app.MapAdminImageUploadEndpoints();
 app.MapAdminQrEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

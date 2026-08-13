@@ -1,5 +1,6 @@
 using CafeMenu.Api.DTOs.Requests;
 using CafeMenu.Api.DTOs.Responses;
+using CafeMenu.Api.Storage;
 
 namespace CafeMenu.Api.Services;
 
@@ -44,5 +45,16 @@ public interface IProductService
     Task<IReadOnlyCollection<ProductResponseDto>> ReorderProductsAsync(
         long appUserId,
         ReorderProductsRequest request,
+        CancellationToken cancellationToken);
+
+    Task<ProductResponseDto> UploadProductImageAsync(
+        long appUserId,
+        long productId,
+        ImageUploadInput input,
+        CancellationToken cancellationToken);
+
+    Task<ProductResponseDto> RemoveProductImageAsync(
+        long appUserId,
+        long productId,
         CancellationToken cancellationToken);
 }

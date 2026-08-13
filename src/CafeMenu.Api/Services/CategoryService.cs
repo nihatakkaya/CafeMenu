@@ -5,6 +5,7 @@ using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
+using CafeMenu.Api.Storage;
 
 namespace CafeMenu.Api.Services;
 
@@ -16,6 +17,7 @@ public sealed class CategoryService : ICategoryService
     private readonly ICafeRepository _cafeRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ITenantAuthorizationService _tenantAuthorizationService;
+    private readonly IImageStorage _imageStorage;
     private readonly CategoryMapper _categoryMapper;
     private readonly ILogger<CategoryService> _logger;
 
@@ -24,6 +26,7 @@ public sealed class CategoryService : ICategoryService
         ICafeRepository cafeRepository,
         IUnitOfWork unitOfWork,
         ITenantAuthorizationService tenantAuthorizationService,
+        IImageStorage imageStorage,
         CategoryMapper categoryMapper,
         ILogger<CategoryService> logger)
     {
@@ -31,6 +34,7 @@ public sealed class CategoryService : ICategoryService
         _cafeRepository = cafeRepository;
         _unitOfWork = unitOfWork;
         _tenantAuthorizationService = tenantAuthorizationService;
+        _imageStorage = imageStorage;
         _categoryMapper = categoryMapper;
         _logger = logger;
     }
@@ -218,6 +222,61 @@ public sealed class CategoryService : ICategoryService
             .ToArray();
     }
 
+    public async Task<CategoryResponseDto> UploadCategoryImageAsync(
+        long appUserId,
+        long categoryId,
+        ImageUploadInput input,
+        CancellationToken cancellationToken)
+    {
+        var category = await GetCategoryOrThrowAsync(categoryId, cancellationToken);
+        await EnsureCafeManagementAccessAsync(appUserId, category.CafeId, cancellationToken);
+
+        var oldImageUrl = category.ImageUrl;
+        StoredImage? storedImage = null;
+
+        try
+        {
+            storedImage = await _imageStorage.StoreAsync(input, ImageStorageFolder.Categories, cancellationToken);
+            category.ImageUrl = storedImage.PublicUrl;
+            category.UpdatedAt = DateTimeOffset.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch
+        {
+            if (storedImage is not null)
+            {
+                await TryDeleteManagedImageAsync(storedImage.PublicUrl, cancellationToken);
+            }
+
+            throw;
+        }
+
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation("Category {CategoryId} image uploaded for cafe {CafeId}", category.Id, category.CafeId);
+
+        return _categoryMapper.ToResponse(category);
+    }
+
+    public async Task<CategoryResponseDto> RemoveCategoryImageAsync(
+        long appUserId,
+        long categoryId,
+        CancellationToken cancellationToken)
+    {
+        var category = await GetCategoryOrThrowAsync(categoryId, cancellationToken);
+        await EnsureCafeManagementAccessAsync(appUserId, category.CafeId, cancellationToken);
+
+        var oldImageUrl = category.ImageUrl;
+        category.ImageUrl = null;
+        category.UpdatedAt = DateTimeOffset.UtcNow;
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await TryDeleteManagedImageAsync(oldImageUrl, cancellationToken);
+        _logger.LogInformation("Category {CategoryId} image removed for cafe {CafeId}", category.Id, category.CafeId);
+
+        return _categoryMapper.ToResponse(category);
+    }
+
     private async Task EnsureCafeManagementAccessAsync(long appUserId, long cafeId, CancellationToken cancellationToken)
     {
         await _tenantAuthorizationService.EnsureCafeAccessAsync(
@@ -259,5 +318,21 @@ public sealed class CategoryService : ICategoryService
     private static string? NormalizeOptionalText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private async Task TryDeleteManagedImageAsync(string? imageUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _imageStorage.DeleteIfManagedAsync(imageUrl, cancellationToken);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogWarning(ex, "Managed category image cleanup failed.");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Managed category image cleanup failed.");
+        }
     }
 }
