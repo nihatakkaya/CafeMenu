@@ -71,6 +71,31 @@ public sealed class CafeController : ControllerBase
         return Ok(ApiResponse<IReadOnlyCollection<MyCafeResponseDto>>.SuccessResponse(response, "Accessible cafes retrieved successfully."));
     }
 
+    [HttpGet("GetCafeDashboardStats/{cafeId:long}")]
+    [ProducesResponseType(typeof(ApiResponse<CafeDashboardStatsResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<ApiResponse<CafeDashboardStatsResponseDto>>> GetCafeDashboardStats(
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.GetCafeDashboardStatsAsync(GetCurrentAppUserId(), cafeId, cancellationToken);
+        return Ok(ApiResponse<CafeDashboardStatsResponseDto>.SuccessResponse(response, "Cafe dashboard stats retrieved successfully."));
+    }
+
+    [Authorize(Policy = ApplicationPolicies.PlatformAdministration)]
+    [HttpGet("GetPlatformDashboardStats")]
+    [ProducesResponseType(typeof(ApiResponse<PlatformDashboardStatsResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]
+    public async Task<ActionResult<ApiResponse<PlatformDashboardStatsResponseDto>>> GetPlatformDashboardStats(
+        CancellationToken cancellationToken)
+    {
+        var response = await _cafeService.GetPlatformDashboardStatsAsync(cancellationToken);
+        return Ok(ApiResponse<PlatformDashboardStatsResponseDto>.SuccessResponse(response, "Platform dashboard stats retrieved successfully."));
+    }
+
     [HttpPut("UpdateCafe/{id:long}")]
     [ProducesResponseType(typeof(ApiResponse<CafeResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

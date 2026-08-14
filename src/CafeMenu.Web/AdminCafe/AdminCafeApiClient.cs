@@ -43,4 +43,35 @@ public sealed class AdminCafeApiClient : IAdminCafeApiClient
             return AdminCafeListResult.Failure();
         }
     }
+
+    public async Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync($"Cafe/GetCafeDashboardStats/{cafeId}", cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return AdminCafeDashboardStatsResult.Failure();
+            }
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<AdminApiResponse<AdminCafeDashboardStatsResponse>>(
+                JsonOptions,
+                cancellationToken);
+
+            return apiResponse is { Success: true, Data: not null }
+                ? AdminCafeDashboardStatsResult.Success(apiResponse.Data)
+                : AdminCafeDashboardStatsResult.Failure();
+        }
+        catch (HttpRequestException)
+        {
+            return AdminCafeDashboardStatsResult.Failure();
+        }
+        catch (JsonException)
+        {
+            return AdminCafeDashboardStatsResult.Failure();
+        }
+    }
 }

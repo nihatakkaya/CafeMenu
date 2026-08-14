@@ -179,7 +179,56 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("/admin/cafes/42/qr", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/settings", html, StringComparison.Ordinal);
         Assert.Contains("Cafe Ayarları", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
-        Assert.Contains("Dashboard analytics sonraki fazlarda eklenecek", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Dashboard özeti yüklenemedi", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AdminCafeShell_ShouldRenderDashboardStatsForAccessibleCafe()
+    {
+        var cafe = CreateCafe(id: 42, name: "Stats Cafe", slug: "stats-cafe", isPublished: true);
+        var stats = new AdminCafeDashboardStatsResponse
+        {
+            CafeId = 42,
+            CafeName = "Stats Cafe",
+            IsActive = true,
+            IsPublished = true,
+            TotalCategoryCount = 5,
+            PublicCategoryCount = 3,
+            TotalProductCount = 18,
+            PublicProductCount = 12,
+            AvailableProductCount = 10,
+            UnavailableProductCount = 8
+        };
+        var cafeClient = new FakeAdminCafeApiClient(
+            AdminCafeListResult.Success([cafe]),
+            AdminCafeDashboardStatsResult.Success(stats));
+        await using var factory = new AdminCafeWebApplicationFactory(
+            new FakeAdminAuthApiClient(CreateAuthResponse()),
+            cafeClient);
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        await LoginThroughEndpointAsync(client);
+
+        using var response = await client.GetAsync("/admin/cafes/42");
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(42, cafeClient.LastDashboardCafeId);
+        Assert.Contains("Toplam kategori", html, StringComparison.Ordinal);
+        Assert.Contains(">5<", html, StringComparison.Ordinal);
+        Assert.Contains("Yayında / görünür kategori", html, StringComparison.Ordinal);
+        Assert.Contains(">3<", html, StringComparison.Ordinal);
+        Assert.Contains("Toplam ürün", html, StringComparison.Ordinal);
+        Assert.Contains(">18<", html, StringComparison.Ordinal);
+        Assert.Contains("Yayında / görünür ürün", html, StringComparison.Ordinal);
+        Assert.Contains(">12<", html, StringComparison.Ordinal);
+        Assert.Contains("Mevcut ürün", html, StringComparison.Ordinal);
+        Assert.Contains(">10<", html, StringComparison.Ordinal);
+        Assert.Contains("Tükendi", html, StringComparison.Ordinal);
+        Assert.Contains(">8<", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -263,6 +312,48 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Equal("https://api.example.test/Cafe/GetMyCafes", handler.RequestUri?.ToString());
     }
 
+    [Fact]
+    public async Task AdminCafeApiClient_ShouldCallDashboardStatsEndpointWithAuthenticatedClient()
+    {
+        var handler = new RecordingHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(
+                """
+                {
+                  "success": true,
+                  "message": "ok",
+                  "data": {
+                    "cafeId": 5,
+                    "cafeName": "Named Client Cafe",
+                    "isActive": true,
+                    "isPublished": false,
+                    "totalCategoryCount": 2,
+                    "publicCategoryCount": 1,
+                    "totalProductCount": 4,
+                    "publicProductCount": 3,
+                    "availableProductCount": 2,
+                    "unavailableProductCount": 2
+                  }
+                }
+                """,
+                Encoding.UTF8,
+                "application/json")
+        });
+        var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.example.test/")
+        };
+        var factory = new RecordingHttpClientFactory(httpClient);
+        var apiClient = new AdminCafeApiClient(factory);
+
+        var result = await apiClient.GetCafeDashboardStatsAsync(5, CancellationToken.None);
+
+        Assert.Equal(AdminCafeListStatus.Success, result.Status);
+        Assert.Equal(AdminAuthenticationConstants.AdminApiClientName, factory.LastClientName);
+        Assert.Equal("https://api.example.test/Cafe/GetCafeDashboardStats/5", handler.RequestUri?.ToString());
+        Assert.Equal(4, result.Stats?.TotalProductCount);
+    }
+
     private static async Task LoginThroughEndpointAsync(HttpClient client)
     {
         using var loginResponse = await client.GetAsync("/account/login?returnUrl=/admin");
@@ -332,18 +423,32 @@ public sealed class AdminCafeSelectionBlazorTests
     private sealed class FakeAdminCafeApiClient : IAdminCafeApiClient
     {
         private readonly AdminCafeListResult _result;
+        private readonly AdminCafeDashboardStatsResult _dashboardStatsResult;
 
-        public FakeAdminCafeApiClient(AdminCafeListResult result)
+        public FakeAdminCafeApiClient(
+            AdminCafeListResult result,
+            AdminCafeDashboardStatsResult? dashboardStatsResult = null)
         {
             _result = result;
+            _dashboardStatsResult = dashboardStatsResult ?? AdminCafeDashboardStatsResult.Failure();
         }
 
         public int GetMyCafesCallCount { get; private set; }
+
+        public long? LastDashboardCafeId { get; private set; }
 
         public Task<AdminCafeListResult> GetMyCafesAsync(CancellationToken cancellationToken)
         {
             GetMyCafesCallCount++;
             return Task.FromResult(_result);
+        }
+
+        public Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+            long cafeId,
+            CancellationToken cancellationToken)
+        {
+            LastDashboardCafeId = cafeId;
+            return Task.FromResult(_dashboardStatsResult);
         }
     }
 

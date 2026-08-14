@@ -4,6 +4,8 @@ public interface IAdminPlatformApiClient
 {
     Task<AdminPlatformCafeListResult> GetCafesAsync(CancellationToken cancellationToken);
 
+    Task<AdminPlatformDashboardStatsResult> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken);
+
     Task<AdminPlatformCafeMutationResult> CreateCafeAsync(
         AdminPlatformCreateCafeRequest request,
         CancellationToken cancellationToken);

@@ -19,6 +19,17 @@ public sealed class AdminPlatformCafeResponse
     public DateTimeOffset UpdatedAt { get; init; }
 }
 
+public sealed class AdminPlatformDashboardStatsResponse
+{
+    public int ActiveCafeCount { get; init; }
+
+    public int InactiveCafeCount { get; init; }
+
+    public int PublishedCafeCount { get; init; }
+
+    public int DraftCafeCount { get; init; }
+}
+
 public sealed class AdminPlatformCafeMemberResponse
 {
     public long MembershipId { get; init; }

@@ -33,6 +33,35 @@
             <section class="@_pageMessageCssClass" role="status">@_pageMessage</section>
         }
 
+        @if (_platformStatsLoadFailed)
+        {
+            <section class="admin-state admin-state-warning" role="alert">
+                <h2>Platform özeti yüklenemedi</h2>
+                <p>Cafe yönetimi kullanılabilir, ancak dashboard sayıları şu anda alınamıyor.</p>
+            </section>
+        }
+        else if (_platformStats is not null)
+        {
+            <section class="admin-platform-stats" aria-label="Platform dashboard istatistikleri">
+                <article class="admin-platform-stat-card">
+                    <span>Aktif cafe</span>
+                    <strong>@_platformStats.ActiveCafeCount</strong>
+                </article>
+                <article class="admin-platform-stat-card">
+                    <span>Pasif cafe</span>
+                    <strong>@_platformStats.InactiveCafeCount</strong>
+                </article>
+                <article class="admin-platform-stat-card">
+                    <span>Yayındaki cafe</span>
+                    <strong>@_platformStats.PublishedCafeCount</strong>
+                </article>
+                <article class="admin-platform-stat-card">
+                    <span>Taslak cafe</span>
+                    <strong>@_platformStats.DraftCafeCount</strong>
+                </article>
+            </section>
+        }
+
         @if (_createdCafe is not null)
         {
             <section class="admin-panel admin-platform-success" role="status">
@@ -124,9 +153,11 @@
     private bool _isPlatformAdmin;
     private bool _isMutating;
     private bool _cafesLoadFailed;
+    private bool _platformStatsLoadFailed;
     private string? _pageMessage;
     private string _pageMessageCssClass = "admin-message";
     private IReadOnlyList<AdminPlatformCafeResponse> _cafes = [];
+    private AdminPlatformDashboardStatsResponse? _platformStats;
     private AdminPlatformCafeResponse? _createdCafe;
     private AdminPlatformCreateCafeFormModel _createCafeModel = new();
     private AdminPlatformCafeActionFormModel _cafeActionModel = new();
@@ -152,6 +183,7 @@
         }
 
         await LoadCafesAsync();
+        await LoadPlatformStatsAsync();
         _isLoading = false;
     }
 
@@ -175,6 +207,7 @@
                 _createdCafe = result.Cafe;
                 _createCafeModel = new AdminPlatformCreateCafeFormModel();
                 await LoadCafesAsync();
+                await LoadPlatformStatsAsync();
                 SetSuccessMessage("Cafe olusturuldu.");
                 return;
             }
@@ -208,6 +241,7 @@
             if (result.Status == AdminPlatformRequestStatus.Success)
             {
                 await LoadCafesAsync();
+                await LoadPlatformStatsAsync();
                 SetSuccessMessage("Cafe durumu guncellendi.");
                 return;
             }
@@ -233,6 +267,20 @@
         _cafesLoadFailed = true;
     }
 
+    private async Task LoadPlatformStatsAsync()
+    {
+        _platformStatsLoadFailed = false;
+        var result = await AdminPlatformApiClient.GetPlatformDashboardStatsAsync(CancellationToken.None);
+        if (result.Status == AdminPlatformRequestStatus.Success && result.Stats is not null)
+        {
+            _platformStats = result.Stats;
+            return;
+        }
+
+        _platformStats = null;
+        _platformStatsLoadFailed = true;
+    }
+
     private async Task RunMutationAsync(Func<Task> operation)
     {
         _isMutating = true;
@@ -253,7 +301,9 @@
         _isLoading = true;
         _isMutating = false;
         _cafesLoadFailed = false;
+        _platformStatsLoadFailed = false;
         _cafes = [];
+        _platformStats = null;
         _createdCafe = null;
         ClearMessage();
     }

@@ -71,7 +71,9 @@ public sealed class AdminPlatformOnboardingBlazorTests
     [Fact]
     public async Task PlatformPage_ShouldRenderCafesAndStaticSsrFormsForPlatformAdmin()
     {
-        var platformClient = new FakeAdminPlatformApiClient(cafes: [CreatePlatformCafe(isActive: false)]);
+        var platformClient = new FakeAdminPlatformApiClient(
+            cafes: [CreatePlatformCafe(isActive: false)],
+            stats: CreatePlatformStats());
         await using var factory = new AdminPlatformWebApplicationFactory(
             new FakeAdminAuthApiClient(CreateAuthResponse([ "PLATFORM_ADMIN" ])),
             new FakeAdminCafeApiClient(AdminCafeListResult.Success([])),
@@ -94,6 +96,14 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Contains("Taslak", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/50\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/platform/cafes/50/members\"", html, StringComparison.Ordinal);
+        Assert.Contains("Aktif cafe", html, StringComparison.Ordinal);
+        Assert.Contains(">4<", html, StringComparison.Ordinal);
+        Assert.Contains("Pasif cafe", html, StringComparison.Ordinal);
+        Assert.Contains(">1<", html, StringComparison.Ordinal);
+        Assert.Contains("Yayındaki cafe", html, StringComparison.Ordinal);
+        Assert.Contains(">3<", html, StringComparison.Ordinal);
+        Assert.Contains("Taslak cafe", html, StringComparison.Ordinal);
+        Assert.Contains(">2<", html, StringComparison.Ordinal);
         Assert.Contains("CreatePlatformCafeForm", html, StringComparison.Ordinal);
         Assert.Contains("PlatformCafeActionForm", html, StringComparison.Ordinal);
         Assert.Contains("__RequestVerificationToken", html, StringComparison.Ordinal);
@@ -457,6 +467,38 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Contains("\"appUserId\":120", handler.RequestBodies[2], StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task AdminPlatformApiClient_ShouldCallPlatformDashboardStatsEndpoint()
+    {
+        var handler = new RecordingHttpMessageHandler([
+            JsonResponse(HttpStatusCode.OK, """
+                {
+                  "success": true,
+                  "message": "ok",
+                  "data": {
+                    "activeCafeCount": 4,
+                    "inactiveCafeCount": 1,
+                    "publishedCafeCount": 3,
+                    "draftCafeCount": 2
+                  }
+                }
+                """)
+        ]);
+        using var httpClient = new HttpClient(handler)
+        {
+            BaseAddress = new Uri("https://api.example.test/")
+        };
+        var factory = new RecordingHttpClientFactory(httpClient);
+        var apiClient = new AdminPlatformApiClient(factory);
+
+        var result = await apiClient.GetPlatformDashboardStatsAsync(CancellationToken.None);
+
+        Assert.Equal(AdminPlatformRequestStatus.Success, result.Status);
+        Assert.Equal(AdminAuthenticationConstants.AdminApiClientName, factory.LastClientName);
+        Assert.Equal("https://api.example.test/Cafe/GetPlatformDashboardStats", handler.Requests[0].RequestUri?.ToString());
+        Assert.Equal(4, result.Stats?.ActiveCafeCount);
+    }
+
     private static async Task LoginThroughEndpointAsync(HttpClient client, string returnUrl)
     {
         using var loginResponse = await client.GetAsync($"/account/login?returnUrl={Uri.EscapeDataString(returnUrl)}");
@@ -598,6 +640,17 @@ public sealed class AdminPlatformOnboardingBlazorTests
         };
     }
 
+    private static AdminPlatformDashboardStatsResponse CreatePlatformStats()
+    {
+        return new AdminPlatformDashboardStatsResponse
+        {
+            ActiveCafeCount = 4,
+            InactiveCafeCount = 1,
+            PublishedCafeCount = 3,
+            DraftCafeCount = 2
+        };
+    }
+
     private static AdminPlatformCafeMemberResponse CreateMember()
     {
         return new AdminPlatformCafeMemberResponse
@@ -674,6 +727,13 @@ public sealed class AdminPlatformOnboardingBlazorTests
         {
             return Task.FromResult(_result);
         }
+
+        public Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+            long cafeId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCafeDashboardStatsResult.Failure());
+        }
     }
 
     private sealed class FakeAdminPlatformApiClient : IAdminPlatformApiClient
@@ -681,15 +741,18 @@ public sealed class AdminPlatformOnboardingBlazorTests
         private readonly IReadOnlyCollection<AdminPlatformCafeResponse> _cafes;
         private readonly IReadOnlyCollection<AdminPlatformCafeMemberResponse> _members;
         private readonly IReadOnlyCollection<AdminPlatformUserSearchResponse> _searchedUsers;
+        private readonly AdminPlatformDashboardStatsResponse? _stats;
 
         public FakeAdminPlatformApiClient(
             IReadOnlyCollection<AdminPlatformCafeResponse>? cafes = null,
             IReadOnlyCollection<AdminPlatformCafeMemberResponse>? members = null,
-            IReadOnlyCollection<AdminPlatformUserSearchResponse>? searchedUsers = null)
+            IReadOnlyCollection<AdminPlatformUserSearchResponse>? searchedUsers = null,
+            AdminPlatformDashboardStatsResponse? stats = null)
         {
             _cafes = cafes ?? [];
             _members = members ?? [];
             _searchedUsers = searchedUsers ?? [];
+            _stats = stats;
         }
 
         public int GetCafesCallCount { get; private set; }
@@ -720,6 +783,13 @@ public sealed class AdminPlatformOnboardingBlazorTests
         {
             GetCafesCallCount++;
             return Task.FromResult(AdminPlatformCafeListResult.Success(_cafes));
+        }
+
+        public Task<AdminPlatformDashboardStatsResult> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(_stats is null
+                ? AdminPlatformDashboardStatsResult.Failure()
+                : AdminPlatformDashboardStatsResult.Success(_stats));
         }
 
         public Task<AdminPlatformCafeMutationResult> CreateCafeAsync(

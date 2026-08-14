@@ -135,6 +135,30 @@ public sealed class CafeService : ICafeService
             .ToArray();
     }
 
+    public async Task<CafeDashboardStatsResponseDto> GetCafeDashboardStatsAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken)
+    {
+        await _tenantAuthorizationService.EnsureCafeAccessAsync(
+            appUserId,
+            cafeId,
+            CafeReaderRoles,
+            allowPlatformAdmin: true,
+            cancellationToken);
+
+        var stats = await _cafeRepository.GetDashboardStatsAsync(cafeId, cancellationToken)
+            ?? throw new NotFoundApplicationException("Cafe was not found.", ApplicationErrorCodes.CafeNotFound);
+
+        return _cafeMapper.ToDashboardStatsResponse(stats);
+    }
+
+    public async Task<PlatformDashboardStatsResponseDto> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken)
+    {
+        var stats = await _cafeRepository.GetPlatformDashboardStatsAsync(cancellationToken);
+        return _cafeMapper.ToPlatformDashboardStatsResponse(stats);
+    }
+
     public async Task<CafeResponseDto> UpdateCafeAsync(
         long appUserId,
         long cafeId,

@@ -12,5 +12,9 @@ public interface ICafeRepository
 
     Task<IReadOnlyCollection<CafeEntity>> GetAllAsync(CancellationToken cancellationToken);
 
+    Task<CafeDashboardStatsProjection?> GetDashboardStatsAsync(long cafeId, CancellationToken cancellationToken);
+
+    Task<PlatformDashboardStatsProjection> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken);
+
     Task AddAsync(CafeEntity cafe, CancellationToken cancellationToken);
 }

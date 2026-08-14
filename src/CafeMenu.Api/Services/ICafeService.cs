@@ -13,6 +13,13 @@ public interface ICafeService
 
     Task<IReadOnlyCollection<MyCafeResponseDto>> GetMyCafesAsync(long appUserId, CancellationToken cancellationToken);
 
+    Task<CafeDashboardStatsResponseDto> GetCafeDashboardStatsAsync(
+        long appUserId,
+        long cafeId,
+        CancellationToken cancellationToken);
+
+    Task<PlatformDashboardStatsResponseDto> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken);
+
     Task<CafeResponseDto> UpdateCafeAsync(long appUserId, long cafeId, UpdateCafeRequest request, CancellationToken cancellationToken);
 
     Task<CafeResponseDto> ChangeCafePublicationAsync(

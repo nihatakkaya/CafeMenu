@@ -764,6 +764,13 @@ public sealed class AdminBrandingManagementBlazorTests
         {
             return Task.FromResult(_result);
         }
+
+        public Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+            long cafeId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCafeDashboardStatsResult.Failure());
+        }
     }
 
     private sealed class FakeAdminBrandingApiClient : IAdminBrandingApiClient

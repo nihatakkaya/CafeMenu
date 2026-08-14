@@ -25,6 +25,21 @@ public sealed record AdminPlatformCafeListResult(
     }
 }
 
+public sealed record AdminPlatformDashboardStatsResult(
+    AdminPlatformRequestStatus Status,
+    AdminPlatformDashboardStatsResponse? Stats)
+{
+    public static AdminPlatformDashboardStatsResult Success(AdminPlatformDashboardStatsResponse stats)
+    {
+        return new AdminPlatformDashboardStatsResult(AdminPlatformRequestStatus.Success, stats);
+    }
+
+    public static AdminPlatformDashboardStatsResult Failure(AdminPlatformRequestStatus status = AdminPlatformRequestStatus.Failure)
+    {
+        return new AdminPlatformDashboardStatsResult(status, null);
+    }
+}
+
 public sealed record AdminPlatformCafeMutationResult(
     AdminPlatformRequestStatus Status,
     AdminPlatformCafeResponse? Cafe)

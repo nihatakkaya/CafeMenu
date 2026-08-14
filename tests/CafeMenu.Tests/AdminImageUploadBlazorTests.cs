@@ -281,6 +281,13 @@ public sealed class AdminImageUploadBlazorTests
                 }
             ]));
         }
+
+        public Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+            long cafeId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCafeDashboardStatsResult.Failure());
+        }
     }
 
     private sealed class FakeAdminBrandingApiClient : IAdminBrandingApiClient

@@ -622,6 +622,16 @@ public sealed class ImageUploadEndpointTests
             return Task.FromResult<IReadOnlyCollection<CafeEntity>>([]);
         }
 
+        public Task<CafeDashboardStatsProjection?> GetDashboardStatsAsync(long cafeId, CancellationToken cancellationToken)
+        {
+            return Task.FromResult<CafeDashboardStatsProjection?>(null);
+        }
+
+        public Task<PlatformDashboardStatsProjection> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new PlatformDashboardStatsProjection(0, 0, 0, 0));
+        }
+
         public Task AddAsync(CafeEntity cafe, CancellationToken cancellationToken)
         {
             return Task.CompletedTask;

@@ -1010,6 +1010,13 @@ public sealed class AdminProductManagementBlazorTests
         {
             return Task.FromResult(_result);
         }
+
+        public Task<AdminCafeDashboardStatsResult> GetCafeDashboardStatsAsync(
+            long cafeId,
+            CancellationToken cancellationToken)
+        {
+            return Task.FromResult(AdminCafeDashboardStatsResult.Failure());
+        }
     }
 
     private sealed class FakeAdminCategoryApiClient : IAdminCategoryApiClient

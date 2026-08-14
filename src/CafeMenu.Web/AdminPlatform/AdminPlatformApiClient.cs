@@ -44,6 +44,34 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         }
     }
 
+    public async Task<AdminPlatformDashboardStatsResult> GetPlatformDashboardStatsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var response = await _httpClient.GetAsync("Cafe/GetPlatformDashboardStats", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return AdminPlatformDashboardStatsResult.Failure(GetFailureStatus(response.StatusCode));
+            }
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<AdminApiResponse<AdminPlatformDashboardStatsResponse>>(
+                JsonOptions,
+                cancellationToken);
+
+            return apiResponse is { Success: true, Data: not null }
+                ? AdminPlatformDashboardStatsResult.Success(apiResponse.Data)
+                : AdminPlatformDashboardStatsResult.Failure();
+        }
+        catch (HttpRequestException)
+        {
+            return AdminPlatformDashboardStatsResult.Failure();
+        }
+        catch (JsonException)
+        {
+            return AdminPlatformDashboardStatsResult.Failure();
+        }
+    }
+
     public Task<AdminPlatformCafeMutationResult> CreateCafeAsync(
         AdminPlatformCreateCafeRequest request,
         CancellationToken cancellationToken)

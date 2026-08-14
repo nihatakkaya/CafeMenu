@@ -1,5 +1,6 @@
 using CafeMenu.Api.DTOs.Responses;
 using CafeMenu.Api.Entities;
+using CafeMenu.Api.Repositories;
 using Riok.Mapperly.Abstractions;
 
 namespace CafeMenu.Api.Mappings;
@@ -67,4 +68,8 @@ public partial class CafeMapper
             membership.Role.Code,
             membership.IsActive);
     }
+
+    public partial CafeDashboardStatsResponseDto ToDashboardStatsResponse(CafeDashboardStatsProjection stats);
+
+    public partial PlatformDashboardStatsResponseDto ToPlatformDashboardStatsResponse(PlatformDashboardStatsProjection stats);
 }
