@@ -14,22 +14,23 @@ public static class AdminAuthServiceCollectionExtensions
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        if (!environment.IsDevelopment())
-        {
-            throw new InvalidOperationException(MemoryStoreProductionGuardMessage);
-        }
-
         services.AddOptions<AdminApiOptions>()
             .Bind(configuration.GetSection("AdminApi"))
             .ValidateDataAnnotations()
             .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Admin API base URL must be absolute.")
             .ValidateOnStart();
 
+        services.AddOptions<AdminSessionOptions>()
+            .Bind(configuration.GetSection(AdminSessionOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<AdminSessionOptions>, AdminSessionOptionsValidator>();
+
         services.AddHttpContextAccessor();
         services.AddAntiforgery();
         services.AddCascadingAuthenticationState();
         services.AddSingleton(TimeProvider.System);
-        services.AddSingleton<IAdminSessionTokenStore, MemoryAdminSessionTokenStore>();
+        AddAdminSessionTokenStore(services, configuration);
         services.AddScoped<IAdminAuthService, AdminAuthService>();
         services.AddScoped<AdminCookieAuthenticationEvents>();
         services.AddTransient<AdminApiAuthenticationHandler>();
@@ -68,5 +69,26 @@ public static class AdminAuthServiceCollectionExtensions
             .AddHttpMessageHandler<AdminApiAuthenticationHandler>();
 
         return services;
+    }
+
+    private static void AddAdminSessionTokenStore(
+        IServiceCollection services,
+        IConfiguration configuration)
+    {
+        services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration =
+                configuration.GetValue<string>($"{AdminSessionOptions.SectionName}:RedisConnectionString")
+                ?? "localhost:6379";
+        });
+
+        services.AddSingleton<IAdminSessionTokenStore>(serviceProvider =>
+        {
+            var options = serviceProvider.GetRequiredService<IOptions<AdminSessionOptions>>().Value;
+
+            return AdminSessionProvider.IsRedis(options.Provider)
+                ? ActivatorUtilities.CreateInstance<RedisAdminSessionTokenStore>(serviceProvider)
+                : ActivatorUtilities.CreateInstance<MemoryAdminSessionTokenStore>(serviceProvider);
+        });
     }
 }

@@ -40,6 +40,21 @@ Do not skip required steps.
 
 ---
 
+# Admin Session Store
+
+Local development may use the default `AdminSession:Provider=Memory` setting. This keeps backend access and refresh tokens out of browser storage while avoiding a local Redis requirement for ordinary development.
+
+To test the production-style distributed store locally, start Docker Compose and set:
+
+```text
+ADMIN_SESSION_PROVIDER=Redis
+ADMIN_SESSION_REDIS_CONNECTION_STRING=redis:6379,abortConnect=false
+```
+
+The Redis provider stores only server-side admin session token data and uses the refresh token expiry as the cache entry TTL. Do not log or copy access tokens, refresh tokens or Redis connection secrets.
+
+---
+
 # Step 1 - Create Entity / Domain Model
 
 Rules

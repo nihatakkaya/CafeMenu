@@ -17,6 +17,18 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:8-alpine
+    container_name: cafemenu-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -48,10 +60,17 @@ services:
       context: .
       dockerfile: src/CafeMenu.Web/Dockerfile
     container_name: cafemenu-web
+    depends_on:
+      redis:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       PublicApi__BaseUrl: ${PUBLIC_API_BASE_URL:-http://api:8080}
+      AdminApi__BaseUrl: ${ADMIN_API_BASE_URL:-http://api:8080}
+      AdminSession__Provider: ${ADMIN_SESSION_PROVIDER:-Memory}
+      AdminSession__KeyPrefix: ${ADMIN_SESSION_KEY_PREFIX:-cafemenu:admin-session:}
+      AdminSession__RedisConnectionString: ${ADMIN_SESSION_REDIS_CONNECTION_STRING:-redis:6379,abortConnect=false}
     ports:
       - "${WEB_HTTP_PORT:-8081}:8080"
 

@@ -2,11 +2,18 @@ extern alias CafeMenuWeb;
 
 using System.Net;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 using CafeMenuWeb::CafeMenu.Web.AdminAuth;
 using CafeMenuWeb::CafeMenu.Web.PublicMenu;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -14,6 +21,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using WebProgram = CafeMenuWeb::Program;
 
 namespace CafeMenu.Tests;
@@ -45,6 +53,28 @@ public sealed class AdminAuthenticationInfrastructureTests
         Assert.NotNull(storedTokens);
         Assert.Equal(AccessToken, storedTokens.AccessToken);
         Assert.Equal(RefreshToken, storedTokens.RefreshToken);
+    }
+
+    [Fact]
+    public async Task LoginAsync_ShouldCreateNewSessionIdentifierForEachLogin()
+    {
+        var tokenStore = new MemoryAdminSessionTokenStore();
+        var authClient = new FakeAdminAuthApiClient(CreateAuthResponse());
+        var service = new AdminAuthService(authClient, tokenStore);
+
+        var first = await service.LoginAsync(
+            new AdminLoginCommand("owner@example.local", "SecurePassword123!"),
+            CancellationToken.None);
+        var second = await service.LoginAsync(
+            new AdminLoginCommand("owner@example.local", "SecurePassword123!"),
+            CancellationToken.None);
+
+        var firstSessionId = first.Principal?.FindFirst(AdminAuthenticationConstants.SessionIdClaim)?.Value;
+        var secondSessionId = second.Principal?.FindFirst(AdminAuthenticationConstants.SessionIdClaim)?.Value;
+
+        Assert.False(string.IsNullOrWhiteSpace(firstSessionId));
+        Assert.False(string.IsNullOrWhiteSpace(secondSessionId));
+        Assert.NotEqual(firstSessionId, secondSessionId);
     }
 
     [Fact]
@@ -153,6 +183,113 @@ public sealed class AdminAuthenticationInfrastructureTests
     }
 
     [Fact]
+    public async Task MemoryStore_ShouldCreateGetUpdateDeleteAndIsolateSessions()
+    {
+        var tokenStore = new MemoryAdminSessionTokenStore();
+        var firstSession = CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10));
+        var secondSession = firstSession with
+        {
+            SessionId = "second-session",
+            AccessToken = "second-access-token",
+            RefreshToken = "second-refresh-token"
+        };
+
+        await tokenStore.StoreAsync(firstSession, CancellationToken.None);
+        await tokenStore.StoreAsync(secondSession, CancellationToken.None);
+        await tokenStore.StoreAsync(firstSession with { AccessToken = RotatedAccessToken }, CancellationToken.None);
+        await tokenStore.RemoveAsync(secondSession.SessionId, CancellationToken.None);
+
+        var firstStored = await tokenStore.GetAsync(firstSession.SessionId, CancellationToken.None);
+        var secondStored = await tokenStore.GetAsync(secondSession.SessionId, CancellationToken.None);
+
+        Assert.Equal(RotatedAccessToken, firstStored?.AccessToken);
+        Assert.Null(secondStored);
+    }
+
+    [Fact]
+    public async Task MemoryStore_ShouldNotReturnExpiredSession()
+    {
+        var tokenStore = new MemoryAdminSessionTokenStore();
+        var expiredTokens = CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-10)) with
+        {
+            RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(-1)
+        };
+
+        await tokenStore.StoreAsync(expiredTokens, CancellationToken.None);
+
+        var storedTokens = await tokenStore.GetAsync(SessionId, CancellationToken.None);
+
+        Assert.Null(storedTokens);
+    }
+
+    [Fact]
+    public async Task RedisStore_ShouldShareSessionsAcrossStoreInstances()
+    {
+        var cache = CreateSharedDistributedCache();
+        var firstStore = CreateRedisStore(cache);
+        var secondStore = CreateRedisStore(cache);
+        var tokens = CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10));
+
+        await firstStore.StoreAsync(tokens, CancellationToken.None);
+
+        var storedTokens = await secondStore.GetAsync(SessionId, CancellationToken.None);
+
+        Assert.NotNull(storedTokens);
+        Assert.Equal(AccessToken, storedTokens.AccessToken);
+        Assert.Equal(RefreshToken, storedTokens.RefreshToken);
+    }
+
+    [Fact]
+    public async Task RedisStore_ShouldUpdateAndRemoveSession()
+    {
+        var cache = CreateSharedDistributedCache();
+        var store = CreateRedisStore(cache);
+        await store.StoreAsync(CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddSeconds(1)), CancellationToken.None);
+
+        var refreshed = await store.RefreshAsync(
+            SessionId,
+            DateTimeOffset.UtcNow.AddMinutes(1),
+            (_, _) => Task.FromResult<AdminSessionTokens?>(
+                CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddMinutes(30)) with
+                {
+                    AccessToken = RotatedAccessToken,
+                    RefreshToken = RotatedRefreshToken
+                }),
+            CancellationToken.None);
+
+        await store.RemoveAsync(SessionId, CancellationToken.None);
+        var removed = await store.GetAsync(SessionId, CancellationToken.None);
+
+        Assert.Equal(RotatedAccessToken, refreshed?.AccessToken);
+        Assert.Null(removed);
+    }
+
+    [Fact]
+    public async Task RedisStore_ShouldRejectMissingExpiredAndMalformedSessions()
+    {
+        var cache = CreateSharedDistributedCache();
+        var store = CreateRedisStore(cache);
+        var expiredTokens = CreateTokens(accessTokenExpiresAt: DateTimeOffset.UtcNow.AddMinutes(-10)) with
+        {
+            SessionId = "expired-session",
+            RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddSeconds(-1)
+        };
+        await store.StoreAsync(expiredTokens, CancellationToken.None);
+        await cache.SetStringAsync(
+            BuildRedisKey("malformed-session"),
+            "{not-json",
+            new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10) });
+
+        var missing = await store.GetAsync("missing-session", CancellationToken.None);
+        var expired = await store.GetAsync("expired-session", CancellationToken.None);
+        var malformed = await store.GetAsync("malformed-session", CancellationToken.None);
+
+        Assert.Null(missing);
+        Assert.Null(expired);
+        Assert.Null(malformed);
+    }
+
+    [Fact]
     public async Task LoginEndpoint_ShouldIssueCookieWithoutJwtTokenValues()
     {
         var authClient = new FakeAdminAuthApiClient(CreateAuthResponse());
@@ -242,12 +379,115 @@ public sealed class AdminAuthenticationInfrastructureTests
             new FakeAdminAuthApiClient(),
             "Production");
 
-        var exception = Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
+        AssertStartupValidationContains(
+            () => factory.CreateClient(),
+            AdminAuthServiceCollectionExtensions.MemoryStoreProductionGuardMessage);
+    }
 
-        Assert.Contains(
-            AdminAuthServiceCollectionExtensions.MemoryStoreProductionGuardMessage,
-            exception.Message,
-            StringComparison.Ordinal);
+    [Fact]
+    public void ProductionEnvironment_ShouldFailFastWithMissingRedisConfiguration()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Production",
+            new Dictionary<string, string?>
+            {
+                ["AdminSession:Provider"] = AdminSessionProvider.Redis,
+                ["AdminSession:RedisConnectionString"] = ""
+            });
+
+        AssertStartupValidationContains(
+            () => factory.CreateClient(),
+            "AdminSession:RedisConnectionString is required");
+    }
+
+    [Fact]
+    public void ProductionEnvironment_ShouldFailFastWithUnsupportedSessionProvider()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Production",
+            new Dictionary<string, string?>
+            {
+                ["AdminSession:Provider"] = "File"
+            });
+
+        AssertStartupValidationContains(
+            () => factory.CreateClient(),
+            "AdminSession:Provider must be Memory or Redis");
+    }
+
+    [Fact]
+    public void ProductionEnvironment_ShouldFailFastWithInvalidSessionTtl()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Production",
+            new Dictionary<string, string?>
+            {
+                ["AdminSession:Provider"] = AdminSessionProvider.Redis,
+                ["AdminSession:RedisConnectionString"] = "localhost:6379",
+                ["AdminSession:MinimumCacheTtlSeconds"] = "0"
+            });
+
+        AssertStartupValidationContains(
+            () => factory.CreateClient(),
+            "MinimumCacheTtlSeconds");
+    }
+
+    [Fact]
+    public void DevelopmentEnvironment_ShouldRegisterMemoryAdminSessionTokenStore()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Development");
+        using var _ = factory.CreateClient();
+
+        var store = factory.Services.GetRequiredService<IAdminSessionTokenStore>();
+
+        Assert.IsType<MemoryAdminSessionTokenStore>(store);
+    }
+
+    [Fact]
+    public void ProductionEnvironment_ShouldRegisterRedisAdminSessionTokenStore()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Production",
+            new Dictionary<string, string?>
+            {
+                ["AdminSession:Provider"] = AdminSessionProvider.Redis,
+                ["AdminSession:RedisConnectionString"] = "localhost:6379"
+            });
+        using var _ = factory.CreateClient();
+
+        var store = factory.Services.GetRequiredService<IAdminSessionTokenStore>();
+
+        Assert.IsType<RedisAdminSessionTokenStore>(store);
+    }
+
+    [Fact]
+    public void CookieOptions_ShouldUseSecureHttpOnlySettings()
+    {
+        using var factory = new AdminAuthWebApplicationFactory(
+            new FakeAdminAuthApiClient(),
+            "Production",
+            new Dictionary<string, string?>
+            {
+                ["AdminSession:Provider"] = AdminSessionProvider.Redis,
+                ["AdminSession:RedisConnectionString"] = "localhost:6379"
+            });
+        using var _ = factory.CreateClient();
+
+        var options = factory.Services
+            .GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(AdminAuthenticationConstants.CookieScheme);
+
+        Assert.Equal("CafeMenu.Admin", options.Cookie.Name);
+        Assert.True(options.Cookie.HttpOnly);
+        Assert.Equal(CookieSecurePolicy.Always, options.Cookie.SecurePolicy);
+        Assert.Equal(SameSiteMode.Lax, options.Cookie.SameSite);
+        Assert.False(options.SlidingExpiration);
     }
 
     [Fact]
@@ -257,7 +497,9 @@ public sealed class AdminAuthenticationInfrastructureTests
             new FakeAdminAuthApiClient(),
             "Production");
 
-        var exception = Assert.Throws<InvalidOperationException>(() => factory.CreateClient());
+        var exception = AssertStartupValidationContains(
+            () => factory.CreateClient(),
+            AdminAuthServiceCollectionExtensions.MemoryStoreProductionGuardMessage);
 
         Assert.DoesNotContain(AccessToken, exception.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(RefreshToken, exception.ToString(), StringComparison.Ordinal);
@@ -325,6 +567,40 @@ public sealed class AdminAuthenticationInfrastructureTests
                 "owner@example.local",
                 "Cafe Owner",
                 ["CAFE_OWNER"]));
+    }
+
+    private static MemoryDistributedCache CreateSharedDistributedCache()
+    {
+        return new MemoryDistributedCache(Options.Create(new MemoryDistributedCacheOptions()));
+    }
+
+    private static RedisAdminSessionTokenStore CreateRedisStore(IDistributedCache cache)
+    {
+        return new RedisAdminSessionTokenStore(
+            cache,
+            Options.Create(new AdminSessionOptions
+            {
+                Provider = AdminSessionProvider.Redis,
+                KeyPrefix = "test:admin-session:",
+                RedisConnectionString = "localhost:6379",
+                MinimumCacheTtlSeconds = 1
+            }),
+            TimeProvider.System);
+    }
+
+    private static string BuildRedisKey(string sessionId)
+    {
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(sessionId));
+        return string.Concat("test:admin-session:", WebEncoders.Base64UrlEncode(digest));
+    }
+
+    private static Exception AssertStartupValidationContains(Action action, string expectedMessage)
+    {
+        var exception = Record.Exception(action);
+
+        Assert.NotNull(exception);
+        Assert.Contains(expectedMessage, exception.ToString(), StringComparison.Ordinal);
+        return exception;
     }
 
     private static string ExtractAntiforgeryToken(string html)
@@ -426,13 +702,16 @@ public sealed class AdminAuthenticationInfrastructureTests
     {
         private readonly IAdminAuthApiClient _authApiClient;
         private readonly string? _environmentName;
+        private readonly IReadOnlyDictionary<string, string?> _configurationOverrides;
 
         public AdminAuthWebApplicationFactory(
             IAdminAuthApiClient authApiClient,
-            string? environmentName = null)
+            string? environmentName = null,
+            IReadOnlyDictionary<string, string?>? configurationOverrides = null)
         {
             _authApiClient = authApiClient;
             _environmentName = environmentName;
+            _configurationOverrides = configurationOverrides ?? new Dictionary<string, string?>();
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -440,6 +719,15 @@ public sealed class AdminAuthenticationInfrastructureTests
             if (!string.IsNullOrWhiteSpace(_environmentName))
             {
                 builder.UseEnvironment(_environmentName);
+            }
+
+            if (_configurationOverrides.Count > 0 ||
+                string.Equals(_environmentName, "Production", StringComparison.Ordinal))
+            {
+                builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+                {
+                    configurationBuilder.AddInMemoryCollection(BuildConfigurationOverrides());
+                });
             }
 
             builder.ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
@@ -454,6 +742,23 @@ public sealed class AdminAuthenticationInfrastructureTests
                 services.AddDataProtection()
                     .PersistKeysToFileSystem(keyDirectory);
             });
+        }
+
+        private IReadOnlyDictionary<string, string?> BuildConfigurationOverrides()
+        {
+            var overrides = new Dictionary<string, string?>(StringComparer.Ordinal)
+            {
+                ["AdminApi:BaseUrl"] = "https://api.example.test",
+                ["PublicApi:BaseUrl"] = "https://api.example.test",
+                ["PublicMenu:BaseUrl"] = "https://menu.example.test"
+            };
+
+            foreach (var item in _configurationOverrides)
+            {
+                overrides[item.Key] = item.Value;
+            }
+
+            return overrides;
         }
     }
 

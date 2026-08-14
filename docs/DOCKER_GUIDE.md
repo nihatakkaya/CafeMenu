@@ -7,7 +7,9 @@ The project uses Docker Compose.
 Typical services:
 
 * ASP.NET Core API
+* ASP.NET Core Web
 * PostgreSQL
+* Redis
 * pgAdmin (optional for development)
 
 Suggested Compose service names:
@@ -15,6 +17,7 @@ Suggested Compose service names:
 ```text
 api
 postgres
+redis
 pgadmin
 ```
 
@@ -70,6 +73,12 @@ Database only
 
 ```bash
 docker compose logs -f postgres
+```
+
+Redis only
+
+```bash
+docker compose logs -f redis
 ```
 
 ---
@@ -145,6 +154,15 @@ Jwt__Secret=...
 ```
 
 Do not bake secrets into the Docker image.
+
+The Web container uses `AdminSession__Provider`. Local development defaults to `Memory`. To exercise the distributed session store with Docker Compose, set:
+
+```text
+ADMIN_SESSION_PROVIDER=Redis
+ADMIN_SESSION_REDIS_CONNECTION_STRING=redis:6379,abortConnect=false
+```
+
+Production-like deployments must not use the memory provider. Use a managed or otherwise secured Redis deployment, provide the connection string as a secret, and configure shared ASP.NET Core Data Protection keys across Web instances.
 
 ---
 

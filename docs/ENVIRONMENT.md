@@ -61,7 +61,14 @@ ImageStorage__Provider=Local
 ImageStorage__LocalRoot=/var/cafemenu/media
 ImageStorage__PublicBaseUrl=https://example.com/media
 ImageStorage__MaxFileSizeBytes=5242880
+
+AdminSession__Provider=Memory
+AdminSession__KeyPrefix=cafemenu:admin-session:
+AdminSession__RedisConnectionString=
+AdminSession__MinimumCacheTtlSeconds=1
 ```
+
+`AdminSession__Provider=Memory` is only valid for `Development`. Staging and Production must use `AdminSession__Provider=Redis` with `AdminSession__RedisConnectionString` supplied from environment variables or a secret manager. Do not commit Redis passwords or production connection strings.
 
 If the Docker configuration uses separate database variables, they may be defined as:
 

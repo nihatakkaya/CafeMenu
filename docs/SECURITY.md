@@ -59,9 +59,15 @@ Refresh tokens should be revocable and stored/handled securely according to the 
 
 CafeMenu.Web must not expose backend JWT access or refresh tokens to browser JavaScript or store them in browser storage.
 
+The `CafeMenu.Admin` browser cookie stores the authenticated admin identity claims and an opaque server-generated session identifier. Backend JWT access tokens and refresh tokens stay server-side in `IAdminSessionTokenStore`.
+
 The development `MemoryAdminSessionTokenStore` is process-local. It is allowed only in the `Development` environment because a Web process restart loses the in-memory refresh token and cannot revoke it during logout.
 
-Production-like environments must use a persistent or distributed `IAdminSessionTokenStore` implementation and shared Data Protection key management. The application must fail fast if the process-local memory store would be used outside `Development`.
+Production-like environments must set `AdminSession:Provider=Redis` and provide `AdminSession:RedisConnectionString` through environment variables or a deployment secret manager. The application fails fast if the process-local memory store would be used outside `Development`, if the Redis connection string is missing for the Redis provider, or if unsupported session provider/TTL configuration is supplied.
+
+Admin session cache entries expire no later than the stored refresh token expiry. Expired or malformed session entries must be treated as missing sessions and must not expose token values in responses, logs or error messages.
+
+Production deployments must also use shared ASP.NET Core Data Protection key management across Web instances so the `CafeMenu.Admin` cookie can be validated after restarts and across instances.
 
 ---
 
