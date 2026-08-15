@@ -54,11 +54,11 @@ AllowedHosts=web.example.com;api.example.com
 
 ConnectionStrings__DefaultConnection=
 
-Jwt__Secret=
+Jwt__SigningKey=
 Jwt__Issuer=
 Jwt__Audience=
-Jwt__AccessTokenExpirationMinutes=
-Jwt__RefreshTokenExpirationDays=
+Jwt__AccessTokenMinutes=
+Jwt__RefreshTokenDays=
 
 Database__Retry__Enabled=true
 Database__Retry__MaxRetryCount=3
@@ -78,6 +78,8 @@ AdminSession__MinimumCacheTtlSeconds=1
 
 DataProtection__ApplicationName=CafeMenu.Web
 DataProtection__KeyRingPath=
+
+PublicMenu__BaseUrl=https://example.com
 
 RateLimiting__Login__PermitLimit=10
 RateLimiting__Login__WindowSeconds=60
@@ -110,6 +112,8 @@ When CafeMenu.Web runs in the production container image, it runs as the Microso
 CafeMenu.Api and CafeMenu.Web container images listen on internal port `8080` through `ASPNETCORE_HTTP_PORTS=8080`.
 
 CafeMenu.Api local media storage uses `/var/cafemenu/media` when `ImageStorage__Provider=Local`. Production deployments that use local media storage must mount persistent storage at that path and ensure the non-root container user can write to it.
+
+Outside `Development`, `ImageStorage__LocalRoot` must be an absolute path and must point to persistent operational storage outside the application source tree. This prevents production containers from silently writing uploaded media to an ephemeral or source-controlled path.
 
 Do not bake production secrets, media files or Data Protection keys into Docker images.
 

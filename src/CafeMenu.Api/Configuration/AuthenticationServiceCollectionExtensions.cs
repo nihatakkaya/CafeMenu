@@ -2,6 +2,7 @@ using System.Text;
 using CafeMenu.Api.Common;
 using CafeMenu.Api.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace CafeMenu.Api.Configuration;
@@ -10,15 +11,26 @@ public static class AuthenticationServiceCollectionExtensions
 {
     public static IServiceCollection AddApplicationAuthentication(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         services.AddOptions<JwtOptions>()
             .Bind(configuration.GetSection(JwtOptions.SectionName))
             .ValidateDataAnnotations()
             .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<JwtOptions>, JwtOptionsValidator>();
 
         var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? throw new InvalidOperationException("JWT configuration is missing.");
+        var validationResult = new JwtOptionsValidator(environment).Validate(null, jwtOptions);
+
+        if (validationResult.Failed)
+        {
+            throw new OptionsValidationException(
+                JwtOptions.SectionName,
+                typeof(JwtOptions),
+                validationResult.Failures);
+        }
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.SigningKey));
 

@@ -39,6 +39,31 @@ public sealed class ImageStorageOptionsValidator : IValidateOptions<ImageStorage
             return ValidateOptionsResult.Fail("ImageStorage:LocalRoot is required when the Local provider is used outside Development.");
         }
 
+        if (!_environment.IsDevelopment())
+        {
+            var configuredLocalRoot = options.LocalRoot ?? string.Empty;
+            if (!Path.IsPathFullyQualified(configuredLocalRoot))
+            {
+                return ValidateOptionsResult.Fail("ImageStorage:LocalRoot must be an absolute filesystem path outside Development.");
+            }
+
+            if (IsUnderContentRoot(configuredLocalRoot))
+            {
+                return ValidateOptionsResult.Fail("ImageStorage:LocalRoot must point to persistent operational storage outside the application source tree outside Development.");
+            }
+        }
+
         return ValidateOptionsResult.Success;
+    }
+
+    private bool IsUnderContentRoot(string path)
+    {
+        var contentRoot = Path.GetFullPath(_environment.ContentRootPath);
+        var localRoot = Path.GetFullPath(path);
+        var relativePath = Path.GetRelativePath(contentRoot, localRoot);
+
+        return relativePath == "." ||
+            (!relativePath.StartsWith("..", StringComparison.Ordinal) &&
+                !Path.IsPathFullyQualified(relativePath));
     }
 }

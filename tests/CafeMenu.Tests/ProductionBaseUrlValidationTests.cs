@@ -2,10 +2,12 @@ extern alias CafeMenuWeb;
 
 using CafeMenuWeb::CafeMenu.Web.AdminAuth;
 using CafeMenuWeb::CafeMenu.Web.PublicMenu;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -182,6 +184,12 @@ public sealed class ProductionBaseUrlValidationTests
                 configurationBuilder.AddInMemoryCollection(BuildConfiguration());
             });
             builder.ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+            builder.ConfigureTestServices(services =>
+            {
+                var keyDirectory = new DirectoryInfo(_dataProtectionKeyPath);
+                services.AddDataProtection()
+                    .PersistKeysToFileSystem(keyDirectory);
+            });
         }
 
         private IReadOnlyDictionary<string, string?> BuildConfiguration()

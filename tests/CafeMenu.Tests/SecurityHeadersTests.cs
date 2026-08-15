@@ -3,6 +3,7 @@ extern alias CafeMenuWeb;
 using System.Net;
 using CafeMenu.Shared.SecurityHeaders;
 using CafeMenuWeb::CafeMenu.Web.PublicMenu;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -210,6 +211,10 @@ public sealed class SecurityHeadersTests
     private sealed class SecurityHeadersWebApplicationFactory : WebApplicationFactory<WebProgram>
     {
         private readonly PublicMenuRequestResult _publicMenuResult;
+        private readonly string _dataProtectionKeyPath = Path.Combine(
+            Path.GetTempPath(),
+            "cafemenu-security-headers-data-protection",
+            Guid.NewGuid().ToString("N"));
 
         public SecurityHeadersWebApplicationFactory()
             : this(PublicMenuRequestResult.NotFound())
@@ -228,6 +233,10 @@ public sealed class SecurityHeadersTests
             {
                 services.RemoveAll<IPublicMenuApiClient>();
                 services.AddSingleton<IPublicMenuApiClient>(new StubPublicMenuApiClient(_publicMenuResult));
+
+                var keyDirectory = new DirectoryInfo(_dataProtectionKeyPath);
+                services.AddDataProtection()
+                    .PersistKeysToFileSystem(keyDirectory);
             });
         }
     }

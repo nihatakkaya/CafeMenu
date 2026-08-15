@@ -6,6 +6,8 @@ public sealed class JwtOptions
 {
     public const string SectionName = "Jwt";
 
+    public const int MinimumSigningKeyLength = 32;
+
     [Required]
     public string Issuer { get; init; } = string.Empty;
 
@@ -13,7 +15,7 @@ public sealed class JwtOptions
     public string Audience { get; init; } = string.Empty;
 
     [Required]
-    [MinLength(32)]
+    [MinLength(MinimumSigningKeyLength)]
     public string SigningKey { get; init; } = string.Empty;
 
     [Range(1, 1440)]

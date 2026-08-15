@@ -55,6 +55,8 @@ Refresh Token
 
 Refresh tokens should be revocable and stored/handled securely according to the authentication design.
 
+Outside `Development`, CafeMenu.Api fails fast when `Jwt:SigningKey` is empty, too short or still set to a committed local-development placeholder. The signing key must be injected through environment variables or a deployment secret manager and must not be logged or committed.
+
 ## Admin Web Session Token Store
 
 CafeMenu.Web must not expose backend JWT access or refresh tokens to browser JavaScript or store them in browser storage.
