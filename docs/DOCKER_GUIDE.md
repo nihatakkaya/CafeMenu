@@ -150,6 +150,9 @@ Examples
 ```text
 ASPNETCORE_ENVIRONMENT=Production
 ConnectionStrings__DefaultConnection=...
+Database__Retry__Enabled=true
+Database__Retry__MaxRetryCount=3
+Database__Retry__MaxRetryDelaySeconds=5
 Jwt__Secret=...
 ```
 
@@ -173,6 +176,22 @@ EF Core migrations must be version-controlled.
 The deployment strategy must define where `dotnet ef database update` or an equivalent migration step runs.
 
 Do not run ad-hoc SQL schema changes inside production containers.
+
+---
+
+## PostgreSQL Transient Retry
+
+CafeMenu.Api enables bounded EF Core/Npgsql transient retry by default for normal runtime database operations.
+
+Default configuration:
+
+```text
+Database__Retry__Enabled=true
+Database__Retry__MaxRetryCount=3
+Database__Retry__MaxRetryDelaySeconds=5
+```
+
+This retry behavior handles only failures that the PostgreSQL provider classifies as transient. It does not run migrations, does not mask permanent configuration/schema errors and does not replace `/health/ready` dependency probes.
 
 ---
 

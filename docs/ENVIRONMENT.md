@@ -57,6 +57,10 @@ Jwt__Audience=
 Jwt__AccessTokenExpirationMinutes=
 Jwt__RefreshTokenExpirationDays=
 
+Database__Retry__Enabled=true
+Database__Retry__MaxRetryCount=3
+Database__Retry__MaxRetryDelaySeconds=5
+
 ImageStorage__Provider=Local
 ImageStorage__LocalRoot=/var/cafemenu/media
 ImageStorage__PublicBaseUrl=https://example.com/media
@@ -93,6 +97,24 @@ In `Development`, `DataProtection__KeyRingPath` may be empty so ASP.NET Core can
 Outside `Development`, CafeMenu.Web fails fast if `DataProtection__KeyRingPath` is empty, whitespace, relative or malformed. Configure it to an absolute path on persistent/shared storage, such as a mounted volume managed by the deployment platform.
 
 The key ring is sensitive operational data. Do not store it in the repository or expose it broadly. If multiple Web instances serve the same deployment, they must share the same key ring path and application name. When a hosting provider is selected, configure provider-specific at-rest protection for the key ring separately.
+
+## PostgreSQL Transient Retry
+
+CafeMenu.Api uses EF Core's Npgsql execution strategy for provider-detected transient PostgreSQL failures.
+
+Retry configuration is managed through:
+
+```text
+Database__Retry__Enabled=true
+Database__Retry__MaxRetryCount=3
+Database__Retry__MaxRetryDelaySeconds=5
+```
+
+Defaults are enabled with `3` retries and a maximum retry delay of `5` seconds. When enabled, `MaxRetryCount` must be between `1` and `10`, and `MaxRetryDelaySeconds` must be between `1` and `60`.
+
+The retry strategy applies only to database failures that the Npgsql provider classifies as transient. Permanent errors such as validation failures, authorization failures, invalid SQL, missing schema or business-rule conflicts are not hidden by retry behavior.
+
+Retry is not a replacement for `/health/ready`; readiness still reports whether PostgreSQL is currently reachable. Explicit EF Core transactions must use the provider execution strategy pattern so retries and user-initiated transactions remain compatible.
 
 ## Rate Limiting
 

@@ -6,6 +6,7 @@ using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
+using Microsoft.EntityFrameworkCore;
 
 namespace CafeMenu.Api.Services;
 
@@ -63,34 +64,39 @@ public sealed class AuthenticationService : IAuthenticationService
 
     public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
-        var utcNow = DateTimeOffset.UtcNow;
-        var existingTokenHash = RefreshTokenGenerator.Hash(request.RefreshToken);
-        var existingToken = await _refreshTokenRepository.GetByTokenHashWithUserAsync(existingTokenHash, cancellationToken);
+        var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
 
-        if (existingToken is null || !existingToken.IsActive(utcNow) || !existingToken.AppUser.IsActive)
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            throw new UnauthorizedApplicationException("Refresh token is invalid or expired.");
-        }
+            var utcNow = DateTimeOffset.UtcNow;
+            var existingTokenHash = RefreshTokenGenerator.Hash(request.RefreshToken);
+            var existingToken = await _refreshTokenRepository.GetByTokenHashWithUserAsync(existingTokenHash, cancellationToken);
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var refreshToken = _tokenService.CreateRefreshToken(existingToken.AppUserId, utcNow);
+            if (existingToken is null || !existingToken.IsActive(utcNow) || !existingToken.AppUser.IsActive)
+            {
+                throw new UnauthorizedApplicationException("Refresh token is invalid or expired.");
+            }
 
-        existingToken.RevokedAt = utcNow;
-        existingToken.ReplacedByTokenHash = refreshToken.Entity.TokenHash;
-        existingToken.UpdatedAt = utcNow;
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            var refreshToken = _tokenService.CreateRefreshToken(existingToken.AppUserId, utcNow);
 
-        await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            existingToken.RevokedAt = utcNow;
+            existingToken.ReplacedByTokenHash = refreshToken.Entity.TokenHash;
+            existingToken.UpdatedAt = utcNow;
 
-        var accessToken = _tokenService.CreateAccessToken(existingToken.AppUser);
+            await _refreshTokenRepository.AddAsync(refreshToken.Entity, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
-        return new AuthResponseDto(
-            accessToken.Token,
-            refreshToken.Token,
-            accessToken.ExpiresAt,
-            refreshToken.Entity.ExpiresAt,
-            _appUserMapper.ToResponse(existingToken.AppUser));
+            var accessToken = _tokenService.CreateAccessToken(existingToken.AppUser);
+
+            return new AuthResponseDto(
+                accessToken.Token,
+                refreshToken.Token,
+                accessToken.ExpiresAt,
+                refreshToken.Entity.ExpiresAt,
+                _appUserMapper.ToResponse(existingToken.AppUser));
+        });
     }
 
     public async Task LogoutAsync(LogoutRequest request, CancellationToken cancellationToken)

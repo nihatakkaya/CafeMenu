@@ -8,6 +8,7 @@ using CafeMenu.Api.Exceptions;
 using CafeMenu.Api.Mappings;
 using CafeMenu.Api.Repositories;
 using CafeMenu.Api.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace CafeMenu.Api.Services;
@@ -53,37 +54,42 @@ public sealed class PlatformUserService : IPlatformUserService
         var email = NormalizeAndValidateEmail(request.Email);
         var fullName = NormalizeAndValidateFullName(request.FullName);
 
-        if (await _appUserRepository.EmailExistsIncludingDeletedAsync(email, cancellationToken))
+        var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
+
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            throw new ConflictApplicationException(
-                "Email is already in use.",
-                ApplicationErrorCodes.UserEmailAlreadyExists);
-        }
+            if (await _appUserRepository.EmailExistsIncludingDeletedAsync(email, cancellationToken))
+            {
+                throw new ConflictApplicationException(
+                    "Email is already in use.",
+                    ApplicationErrorCodes.UserEmailAlreadyExists);
+            }
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var utcNow = DateTimeOffset.UtcNow;
-        var user = new AppUserEntity
-        {
-            Email = email,
-            FullName = fullName,
-            PasswordHash = _passwordHasher.HashPassword(UserSetupTokenGenerator.Generate()),
-            IsActive = false,
-            CreatedAt = utcNow,
-            UpdatedAt = utcNow
-        };
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            var utcNow = DateTimeOffset.UtcNow;
+            var user = new AppUserEntity
+            {
+                Email = email,
+                FullName = fullName,
+                PasswordHash = _passwordHasher.HashPassword(UserSetupTokenGenerator.Generate()),
+                IsActive = false,
+                CreatedAt = utcNow,
+                UpdatedAt = utcNow
+            };
 
-        var generatedToken = await CreateSetupTokenAsync(user.Id, utcNow, cancellationToken);
-        await _appUserRepository.AddAsync(user, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+            var generatedToken = await CreateSetupTokenAsync(user.Id, utcNow, cancellationToken);
+            await _appUserRepository.AddAsync(user, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        generatedToken.Entity.AppUserId = user.Id;
-        await _setupTokenRepository.AddAsync(generatedToken.Entity, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            generatedToken.Entity.AppUserId = user.Id;
+            await _setupTokenRepository.AddAsync(generatedToken.Entity, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
-        _logger.LogInformation("Pending platform user {UserId} created for setup", user.Id);
+            _logger.LogInformation("Pending platform user {UserId} created for setup", user.Id);
 
-        return _platformUserMapper.ToSetupResponse(user, generatedToken.PlainToken, generatedToken.Entity.ExpiresAt);
+            return _platformUserMapper.ToSetupResponse(user, generatedToken.PlainToken, generatedToken.Entity.ExpiresAt);
+        });
     }
 
     public async Task<PlatformUserResponseDto> CompleteUserSetupAsync(
@@ -93,64 +99,74 @@ public sealed class PlatformUserService : IPlatformUserService
         ValidatePasswordConfirmation(request.Password, request.ConfirmPassword);
         ValidatePasswordPolicy(request.Password);
 
-        var tokenHash = UserSetupTokenGenerator.Hash(request.Token.Trim());
-        var setupToken = await _setupTokenRepository.GetByTokenHashWithUserAsync(tokenHash, cancellationToken);
-        var utcNow = DateTimeOffset.UtcNow;
+        var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
 
-        EnsureSetupTokenCanBeUsed(setupToken, utcNow);
-        var user = setupToken!.AppUser;
-
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        user.PasswordHash = _passwordHasher.HashPassword(request.Password);
-        user.IsActive = true;
-        user.UpdatedAt = utcNow;
-
-        var openTokens = await _setupTokenRepository.GetUnconsumedByUserIdAsync(user.Id, cancellationToken);
-        foreach (var openToken in openTokens)
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            openToken.ConsumedAt = utcNow;
-            openToken.UpdatedAt = utcNow;
-        }
+            var tokenHash = UserSetupTokenGenerator.Hash(request.Token.Trim());
+            var setupToken = await _setupTokenRepository.GetByTokenHashWithUserAsync(tokenHash, cancellationToken);
+            var utcNow = DateTimeOffset.UtcNow;
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            EnsureSetupTokenCanBeUsed(setupToken, utcNow);
+            var user = setupToken!.AppUser;
 
-        _logger.LogInformation("User {UserId} completed setup", user.Id);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            user.PasswordHash = _passwordHasher.HashPassword(request.Password);
+            user.IsActive = true;
+            user.UpdatedAt = utcNow;
 
-        return _platformUserMapper.ToResponse(user);
+            var openTokens = await _setupTokenRepository.GetUnconsumedByUserIdAsync(user.Id, cancellationToken);
+            foreach (var openToken in openTokens)
+            {
+                openToken.ConsumedAt = utcNow;
+                openToken.UpdatedAt = utcNow;
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            _logger.LogInformation("User {UserId} completed setup", user.Id);
+
+            return _platformUserMapper.ToResponse(user);
+        });
     }
 
     public async Task<UserSetupResponseDto> ReissueUserSetupAsync(
         long userId,
         CancellationToken cancellationToken)
     {
-        var user = await _appUserRepository.GetByIdWithRolesAsync(userId, cancellationToken)
-            ?? throw new NotFoundApplicationException("User was not found.", ApplicationErrorCodes.UserNotFound);
+        var executionStrategy = _dbContext.Database.CreateExecutionStrategy();
 
-        if (user.IsActive)
+        return await executionStrategy.ExecuteAsync(async () =>
         {
-            throw new ConflictApplicationException(
-                "User setup is already completed.",
-                ApplicationErrorCodes.UserSetupAlreadyCompleted);
-        }
+            var user = await _appUserRepository.GetByIdWithRolesAsync(userId, cancellationToken)
+                ?? throw new NotFoundApplicationException("User was not found.", ApplicationErrorCodes.UserNotFound);
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var utcNow = DateTimeOffset.UtcNow;
-        var openTokens = await _setupTokenRepository.GetUnconsumedByUserIdAsync(user.Id, cancellationToken);
-        foreach (var openToken in openTokens)
-        {
-            openToken.ConsumedAt = utcNow;
-            openToken.UpdatedAt = utcNow;
-        }
+            if (user.IsActive)
+            {
+                throw new ConflictApplicationException(
+                    "User setup is already completed.",
+                    ApplicationErrorCodes.UserSetupAlreadyCompleted);
+            }
 
-        var generatedToken = await CreateSetupTokenAsync(user.Id, utcNow, cancellationToken);
-        await _setupTokenRepository.AddAsync(generatedToken.Entity, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+            await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+            var utcNow = DateTimeOffset.UtcNow;
+            var openTokens = await _setupTokenRepository.GetUnconsumedByUserIdAsync(user.Id, cancellationToken);
+            foreach (var openToken in openTokens)
+            {
+                openToken.ConsumedAt = utcNow;
+                openToken.UpdatedAt = utcNow;
+            }
 
-        _logger.LogInformation("Setup token reissued for user {UserId}", user.Id);
+            var generatedToken = await CreateSetupTokenAsync(user.Id, utcNow, cancellationToken);
+            await _setupTokenRepository.AddAsync(generatedToken.Entity, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
-        return _platformUserMapper.ToSetupResponse(user, generatedToken.PlainToken, generatedToken.Entity.ExpiresAt);
+            _logger.LogInformation("Setup token reissued for user {UserId}", user.Id);
+
+            return _platformUserMapper.ToSetupResponse(user, generatedToken.PlainToken, generatedToken.Entity.ExpiresAt);
+        });
     }
 
     public async Task<IReadOnlyCollection<PlatformUserSearchResponseDto>> SearchUsersAsync(

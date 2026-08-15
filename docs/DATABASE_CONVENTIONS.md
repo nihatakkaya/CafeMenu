@@ -339,6 +339,18 @@ Migration source files must be committed to Git.
 
 ---
 
+# PostgreSQL Transient Retry
+
+Application runtime database access may use EF Core's Npgsql execution strategy with `EnableRetryOnFailure` for provider-detected transient PostgreSQL errors.
+
+Retry configuration must remain bounded and configurable. CafeMenu V1 defaults to enabled retry with a maximum of `3` retries and a maximum delay of `5` seconds. Retry must not be implemented with custom catch-all loops around repositories or services.
+
+Permanent database errors, validation errors, authorization failures and business-rule conflicts must not be treated as transient retry cases.
+
+When service-layer operations create explicit EF Core transactions, they must run inside the provider execution strategy's `ExecuteAsync` pattern. Automatic migrations at application startup remain prohibited.
+
+---
+
 # Enum Storage
 
 Store business enums as readable string values when persistence stability and database readability are important.
