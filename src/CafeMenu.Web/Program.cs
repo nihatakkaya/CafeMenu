@@ -38,8 +38,8 @@ builder.Services.AddSingleton<IValidateOptions<PublicMenuQrOptions>, AdminQrOpti
 builder.Services.AddOptions<PublicMenuApiOptions>()
     .Bind(builder.Configuration.GetSection("PublicApi"))
     .ValidateDataAnnotations()
-    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Public API base URL must be absolute.")
     .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<PublicMenuApiOptions>, PublicApiOptionsValidator>();
 builder.Services.AddHttpClient<IPublicMenuApiClient, PublicMenuApiClient>((serviceProvider, httpClient) =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<PublicMenuApiOptions>>().Value;

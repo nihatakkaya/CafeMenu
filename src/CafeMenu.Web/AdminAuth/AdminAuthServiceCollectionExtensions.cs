@@ -17,8 +17,8 @@ public static class AdminAuthServiceCollectionExtensions
         services.AddOptions<AdminApiOptions>()
             .Bind(configuration.GetSection("AdminApi"))
             .ValidateDataAnnotations()
-            .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "Admin API base URL must be absolute.")
             .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<AdminApiOptions>, AdminApiOptionsValidator>();
 
         services.AddOptions<AdminSessionOptions>()
             .Bind(configuration.GetSection(AdminSessionOptions.SectionName))
