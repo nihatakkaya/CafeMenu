@@ -12,6 +12,7 @@ using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.Configuration;
 using CafeMenu.Web.PublicMenu;
 using CafeMenu.Shared.HealthChecks;
+using CafeMenu.Shared.HostFiltering;
 using CafeMenu.Shared.RateLimiting;
 using CafeMenu.Shared.ReverseProxy;
 using CafeMenu.Shared.SecurityHeaders;
@@ -25,6 +26,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddApplicationDataProtection(builder.Configuration);
 builder.Services.AddOutboundHttpClientConfiguration(builder.Configuration);
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddApplicationHostFiltering();
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
 builder.Services.AddApplicationRateLimiting(builder.Configuration);
 builder.Services.AddApplicationSecurityHeaders();

@@ -760,6 +760,7 @@ public sealed class AdminAuthenticationInfrastructureTests
                 ["AdminApi:BaseUrl"] = "https://api.example.test",
                 ["PublicApi:BaseUrl"] = "https://api.example.test",
                 ["PublicMenu:BaseUrl"] = "https://menu.example.test",
+                ["AllowedHosts"] = "localhost",
                 ["DataProtection:ApplicationName"] = "CafeMenu.Web.Tests",
                 ["DataProtection:KeyRingPath"] = _dataProtectionKeyPath
             };

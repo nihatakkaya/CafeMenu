@@ -87,6 +87,14 @@ Production environments must always use HTTPS.
 
 Authentication tokens must not be transmitted over unencrypted HTTP in production.
 
+## Host Filtering
+
+CafeMenu.Api and CafeMenu.Web rely on ASP.NET Core's built-in Host Filtering and the standard `AllowedHosts` configuration key.
+
+Production-like environments must configure an explicit host allow-list. `AllowedHosts=*` is rejected outside `Development` because it accepts arbitrary Host headers. Host entries must be host names only; do not include `http://`, `https://`, ports, paths, query strings or fragments.
+
+API and Web processes may have different allowed host lists. Configure the real deployment domains through environment variables or the hosting platform, not source code. `AllowedHosts` is separate from TLS certificates, DNS records, Kestrel bind addresses and reverse proxy trusted proxy configuration.
+
 ## HTTP Security Headers
 
 CafeMenu.Api and CafeMenu.Web apply a small provider-independent baseline security header policy:

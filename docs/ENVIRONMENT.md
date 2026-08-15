@@ -50,6 +50,7 @@ Examples
 ```text
 ASPNETCORE_ENVIRONMENT=Development
 ASPNETCORE_HTTP_PORTS=8080
+AllowedHosts=web.example.com;api.example.com
 
 ConnectionStrings__DefaultConnection=
 
@@ -225,6 +226,30 @@ When `ReverseProxy__Enabled=true`, startup validation requires `ReverseProxy__Fo
 Use `ReverseProxy__KnownProxies` for individual proxy IP addresses and `ReverseProxy__KnownIPNetworks` for trusted CIDR ranges, for example `10.0.0.0/24` or `2001:db8::/64`.
 
 Only controlled proxy IP addresses or CIDR ranges may be trusted. Do not clear trusted proxy lists to accept all forwarded headers, and do not enable platform-wide trust-all forwarding switches such as `ASPNETCORE_FORWARDEDHEADERS_ENABLED`.
+
+## Allowed Hosts / Host Filtering
+
+CafeMenu.Api and CafeMenu.Web use ASP.NET Core's built-in Host Filtering with the standard `AllowedHosts` configuration key.
+
+Outside `Development`, `AllowedHosts` must be an explicit semicolon-separated allow-list. The unrestricted wildcard `*`, empty values, URLs, paths, query strings, fragments and host entries with ports are rejected at startup. Use host names only:
+
+```text
+AllowedHosts=web.example.com;api.example.com
+```
+
+API and Web deployments may use different host lists. For example, an API deployment can set `AllowedHosts=api.example.com`, while the Web deployment can set `AllowedHosts=web.example.com`. Do not hard-code real production domains in source; provide them through environment variables or deployment configuration.
+
+Scoped subdomain wildcard entries such as `*.example.com` are allowed when the deployment intentionally needs ASP.NET Core's supported wildcard host matching. The unrestricted `*` wildcard is only acceptable for local development.
+
+Do not include a scheme or port:
+
+```text
+Bad: https://web.example.com
+Bad: web.example.com:443
+Good: web.example.com
+```
+
+`AllowedHosts` is not DNS, TLS certificate configuration or Kestrel bind-address configuration. It controls which incoming HTTP `Host` headers the application will accept. Reverse proxy trusted proxy settings remain a separate security layer; CafeMenu currently processes `X-Forwarded-For` and `X-Forwarded-Proto`, not `X-Forwarded-Host`.
 
 If the Docker configuration uses separate database variables, they may be defined as:
 

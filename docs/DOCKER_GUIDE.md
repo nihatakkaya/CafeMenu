@@ -176,6 +176,21 @@ ADMIN_SESSION_REDIS_CONNECTION_STRING=redis:6379,abortConnect=false
 
 Production-like deployments must not use the memory provider. Use a managed or otherwise secured Redis deployment, provide the connection string as a secret, and configure shared ASP.NET Core Data Protection keys across Web instances.
 
+## Allowed Hosts
+
+CafeMenu.Api and CafeMenu.Web use ASP.NET Core Host Filtering. Local Docker development runs in `Development`, where the project appsettings allow the local browser hosts and Compose service DNS names needed by the current topology:
+
+* API: `localhost`, `127.0.0.1`, `[::1]`, `api`
+* Web: `localhost`, `127.0.0.1`, `[::1]`, `web`
+
+Production deployments must set `AllowedHosts` explicitly through environment/deployment configuration, for example:
+
+```text
+AllowedHosts=web.example.com
+```
+
+Do not bake real production hostnames into Docker images. Do not include URL schemes or ports in `AllowedHosts`; Docker/Kestrel port binding is separate from Host header allow-listing.
+
 ---
 
 ## Database Migrations

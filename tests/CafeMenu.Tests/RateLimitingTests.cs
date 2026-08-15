@@ -441,6 +441,7 @@ public sealed class RateLimitingTests
             {
                 var configuration = new Dictionary<string, string?>(StringComparer.Ordinal)
                 {
+                    ["AllowedHosts"] = "api.example.test;localhost",
                     ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=cafemenu_test;Username=test;Password=test",
                     ["ImageStorage:Provider"] = "Local",
                     ["ImageStorage:LocalRoot"] = Path.Combine(Path.GetTempPath(), "cafemenu-tests-media", _databaseName),

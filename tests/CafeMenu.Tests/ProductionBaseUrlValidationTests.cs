@@ -119,6 +119,7 @@ public sealed class ProductionBaseUrlValidationTests
         using var factory = new ProductionBaseUrlWebApplicationFactory();
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
+            BaseAddress = new Uri("https://web.example.com"),
             AllowAutoRedirect = false
         });
 
@@ -190,6 +191,7 @@ public sealed class ProductionBaseUrlValidationTests
                 ["AdminApi:BaseUrl"] = "https://api.example.com",
                 ["PublicApi:BaseUrl"] = "https://api.example.com",
                 ["PublicMenu:BaseUrl"] = "https://menu.example.com",
+                ["AllowedHosts"] = "web.example.com",
                 ["AdminSession:Provider"] = AdminSessionProvider.Redis,
                 ["AdminSession:RedisConnectionString"] = "localhost:6379",
                 ["AdminSession:MinimumCacheTtlSeconds"] = "1",

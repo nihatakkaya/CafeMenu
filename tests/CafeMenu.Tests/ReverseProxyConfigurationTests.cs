@@ -355,6 +355,7 @@ public sealed class ReverseProxyConfigurationTests
             var configuration = new Dictionary<string, string?>(StringComparer.Ordinal)
             {
                 ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=cafemenu_test;Username=test;Password=test",
+                ["AllowedHosts"] = "api.example.com",
                 ["Jwt:Issuer"] = "CafeMenu.Tests",
                 ["Jwt:Audience"] = "CafeMenu.Api",
                 ["Jwt:SigningKey"] = "reverse_proxy_tests_signing_key_32_chars_min",
