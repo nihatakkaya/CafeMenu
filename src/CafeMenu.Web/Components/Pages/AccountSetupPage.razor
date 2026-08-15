@@ -4,14 +4,14 @@
 @inject IHttpContextAccessor HttpContextAccessor
 @inject NavigationManager NavigationManager
 
-<PageTitle>Sifre Belirleme</PageTitle>
+<PageTitle>Şifre Belirleme</PageTitle>
 
 <section class="account-setup-page">
     <section class="account-setup-panel">
         <p class="account-kicker">CafeMenu</p>
-        <h1>Sifrenizi belirleyin</h1>
+        <h1>Şifrenizi belirleyin</h1>
         <p class="account-summary">
-            Platform admin tarafindan verilen setup kodunu yapistirin ve yeni sifrenizi belirleyin.
+            Platform yöneticisi tarafından verilen kurulum kodunu girin ve yeni şifrenizi belirleyin.
         </p>
 
         @if (!string.IsNullOrWhiteSpace(_message))
@@ -24,31 +24,31 @@
             <ValidationSummary />
 
             <label>
-                Setup kodu
+                Kurulum kodu
                 <InputText @bind-Value="_formModel.Token" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="256" />
             </label>
 
             <label>
-                Yeni sifre
+                Yeni şifre
                 <InputText @bind-Value="_formModel.Password" type="password" autocomplete="new-password" maxlength="128" />
             </label>
 
             <label>
-                Yeni sifre tekrari
+                Yeni şifre tekrarı
                 <InputText @bind-Value="_formModel.ConfirmPassword" type="password" autocomplete="new-password" maxlength="128" />
             </label>
 
-            <ul class="account-policy-list" aria-label="Sifre kurallari">
+            <ul class="account-policy-list" aria-label="Şifre kuralları">
                 <li>En az 12 karakter</li>
-                <li>Buyuk harf, kucuk harf, rakam ve ozel karakter</li>
+                <li>Büyük harf, küçük harf, rakam ve özel karakter</li>
                 <li>En fazla 128 karakter</li>
             </ul>
 
-            <button type="submit" disabled="@_isSubmitting">Hesabi hazirla</button>
+            <button type="submit" disabled="@_isSubmitting">Hesabı hazırla</button>
         </EditForm>
 
         <p class="account-secondary-link">
-            Hesabiniz hazirsa <a href="/account/login">giris yapin</a>.
+            Hesabınız hazırsa <a href="/account/login">giriş yapın</a>.
         </p>
     </section>
 </section>
@@ -105,7 +105,7 @@
     private void HandleInvalidSubmit(EditContext editContext)
     {
         ClearSensitiveForm();
-        SetErrorMessage("Form alanlarini kontrol edin. Sifreler ayni olmali ve sifre kurallarini karsilamalidir.");
+        SetErrorMessage("Form alanlarını kontrol edin. Şifreler aynı olmalı ve şifre kurallarını karşılamalıdır.");
     }
 
     private void ApplyNoStoreHeaders()
@@ -142,9 +142,9 @@
     {
         return status switch
         {
-            AccountSetupStatus.InvalidToken => "Setup kodu gecersiz, suresi dolmus veya daha once kullanilmis olabilir.",
-            AccountSetupStatus.ValidationError => "Sifre kurallarini kontrol edin ve tekrar deneyin.",
-            _ => "Sifre belirleme islemi su anda tamamlanamiyor. Lutfen daha sonra tekrar deneyin."
+            AccountSetupStatus.InvalidToken => "Kurulum kodu geçersiz, süresi dolmuş veya daha önce kullanılmış olabilir.",
+            AccountSetupStatus.ValidationError => "Şifre kurallarını kontrol edin ve tekrar deneyin.",
+            _ => "Şifre belirleme işlemi şu anda tamamlanamıyor. Lütfen daha sonra tekrar deneyin."
         };
     }
 }

@@ -3,29 +3,29 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IAdminPlatformApiClient AdminPlatformApiClient
 
-<PageTitle>Platform Admin</PageTitle>
+<PageTitle>Platform Yönetimi</PageTitle>
 
 <section class="admin-page admin-platform-page">
     @if (_isLoading)
     {
         <section class="admin-state" aria-live="polite">
-            <h1>Yukleniyor</h1>
-            <p>Platform admin alani hazirlaniyor.</p>
+            <h1>Yükleniyor</h1>
+            <p>Platform yönetim alanı hazırlanıyor.</p>
         </section>
     }
     else if (!_isPlatformAdmin)
     {
         <section class="admin-state admin-state-denied" role="alert">
-            <h1>Erisim yok</h1>
-            <p>Bu alan yalniz platform admin yetkisine sahip kullanicilar icindir.</p>
+            <h1>Erişim yok</h1>
+            <p>Bu alan yalnız platform yöneticileri için kullanılabilir.</p>
         </section>
     }
     else
     {
         <header class="admin-page-header">
-            <p class="admin-kicker">Platform Admin</p>
-            <h1>Platform yonetimi</h1>
-            <p class="admin-page-summary">Cafeleri goruntuleyin, yeni cafe olusturun ve uyelik yonetimine gecin.</p>
+            <p class="admin-kicker">Platform Yönetimi</p>
+            <h1>Platform yönetimi</h1>
+            <p class="admin-page-summary">Cafeleri görüntüleyin, yeni cafe oluşturun ve kullanıcı yönetimine geçin.</p>
         </header>
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
@@ -46,18 +46,22 @@
                 <article class="admin-platform-stat-card">
                     <span>Aktif cafe</span>
                     <strong>@_platformStats.ActiveCafeCount</strong>
+                    <small>Aktif işletme</small>
                 </article>
                 <article class="admin-platform-stat-card">
                     <span>Pasif cafe</span>
                     <strong>@_platformStats.InactiveCafeCount</strong>
+                    <small>Geçici olarak kapalı</small>
                 </article>
                 <article class="admin-platform-stat-card">
                     <span>Yayındaki cafe</span>
                     <strong>@_platformStats.PublishedCafeCount</strong>
+                    <small>Müşteri menüsü açık</small>
                 </article>
                 <article class="admin-platform-stat-card">
                     <span>Taslak cafe</span>
                     <strong>@_platformStats.DraftCafeCount</strong>
+                    <small>Henüz müşteriye açık değil</small>
                 </article>
             </section>
         }
@@ -65,34 +69,34 @@
         @if (_createdCafe is not null)
         {
             <section class="admin-panel admin-platform-success" role="status">
-                <h2>Cafe olusturuldu</h2>
-                <p>@_createdCafe.Name cafe kaydi hazir.</p>
+                <h2>Cafe oluşturuldu</h2>
+                <p>@_createdCafe.Name cafe kaydı hazır.</p>
                 <div class="admin-actions">
-                    <a class="admin-primary-button" href="@($"/admin/cafes/{_createdCafe.Id}")">Cafe yonetimine git</a>
-                    <a class="admin-secondary-button" href="@($"/admin/platform/cafes/{_createdCafe.Id}/members")">Uyeleri yonet</a>
+                    <a class="admin-primary-button" href="@($"/admin/cafes/{_createdCafe.Id}")">Cafe yönetimine git</a>
+                    <a class="admin-secondary-button" href="@($"/admin/platform/cafes/{_createdCafe.Id}/members")">Kullanıcıları yönet</a>
                 </div>
             </section>
         }
 
         <section class="admin-platform-layout">
             <section class="admin-panel">
-                <h2>Yeni Cafe Olustur</h2>
+                <h2>Yeni cafe oluştur</h2>
                 <EditForm Model="_createCafeModel" OnValidSubmit="CreateCafeAsync" FormName="CreatePlatformCafeForm" id="CreatePlatformCafeForm" method="post">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
                     <div class="admin-form-grid">
                         <label>
-                            Cafe adi
+                            Cafe adı
                             <InputText @bind-Value="_createCafeModel.Name" maxlength="160" />
                         </label>
                         <label>
-                            Slug
+                            Menü adresi
                             <InputText @bind-Value="_createCafeModel.Slug" maxlength="120" />
                         </label>
                     </div>
 
-                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Cafe olustur</button>
+                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Cafe oluştur</button>
                 </EditForm>
             </section>
 
@@ -106,15 +110,15 @@
                     @if (_cafesLoadFailed)
                     {
                         <section class="admin-state admin-state-warning" role="alert">
-                            <h3>Cafeler yuklenemedi</h3>
-                            <p>Platform cafe listesi su anda alinamiyor.</p>
+                            <h3>Cafeler yüklenemedi</h3>
+                            <p>Platform cafe listesi şu anda alınamıyor.</p>
                         </section>
                     }
                     else if (_cafes.Count == 0)
                     {
                         <section class="admin-state">
-                            <h3>Henuz cafe yok</h3>
-                            <p>Ilk cafe kaydini bu ekrandan olusturabilirsiniz.</p>
+                            <h3>Henüz cafe yok</h3>
+                            <p>İlk cafe kaydını bu ekrandan oluşturabilirsiniz.</p>
                         </section>
                     }
                     else
@@ -132,8 +136,8 @@
                                         <span class="@GetPublishedBadgeClass(cafe.IsPublished)">@GetPublishedLabel(cafe.IsPublished)</span>
                                     </div>
                                     <div class="admin-actions">
-                                        <a class="admin-secondary-button" href="@($"/admin/cafes/{cafe.Id}")">Yonet</a>
-                                        <a class="admin-secondary-button" href="@($"/admin/platform/cafes/{cafe.Id}/members")">Uyeler</a>
+                                        <a class="admin-secondary-button" href="@($"/admin/cafes/{cafe.Id}")">Yönet</a>
+                                        <a class="admin-secondary-button" href="@($"/admin/platform/cafes/{cafe.Id}/members")">Kullanıcılar</a>
                                         <button class="admin-secondary-button" type="submit" name="_cafeActionModel.Action" value="@BuildCafeAction(cafe)" disabled="@_isMutating">
                                             @GetCafeActionLabel(cafe.IsActive)
                                         </button>
@@ -208,11 +212,11 @@
                 _createCafeModel = new AdminPlatformCreateCafeFormModel();
                 await LoadCafesAsync();
                 await LoadPlatformStatsAsync();
-                SetSuccessMessage("Cafe olusturuldu.");
+                SetSuccessMessage("Cafe oluşturuldu.");
                 return;
             }
 
-            SetErrorMessage(GetMutationFailureMessage(result.Status, "Cafe olusturulamadi."));
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Cafe oluşturulamadı."));
         });
     }
 
@@ -242,11 +246,11 @@
             {
                 await LoadCafesAsync();
                 await LoadPlatformStatsAsync();
-                SetSuccessMessage("Cafe durumu guncellendi.");
+                SetSuccessMessage("Cafe durumu güncellendi.");
                 return;
             }
 
-            SetErrorMessage(GetMutationFailureMessage(result.Status, "Cafe durumu guncellenemedi."));
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Cafe durumu güncellenemedi."));
         });
     }
 
@@ -348,7 +352,7 @@
 
     private static string GetPublishedLabel(bool isPublished)
     {
-        return isPublished ? "Yayinda" : "Taslak";
+        return isPublished ? "Yayında" : "Taslak";
     }
 
     private static string GetActiveBadgeClass(bool isActive)
@@ -369,10 +373,10 @@
     {
         return status switch
         {
-            AdminPlatformRequestStatus.ValidationError => "Form alanlarini kontrol edin.",
-            AdminPlatformRequestStatus.UnauthorizedOrForbidden => "Bu islem icin yetkiniz yok.",
-            AdminPlatformRequestStatus.Conflict => "Kayit mevcut durumla cakisti.",
-            AdminPlatformRequestStatus.NotFound => "Kayit bulunamadi.",
+            AdminPlatformRequestStatus.ValidationError => "Form alanlarını kontrol edin.",
+            AdminPlatformRequestStatus.UnauthorizedOrForbidden => "Bu işlem için yetkiniz yok.",
+            AdminPlatformRequestStatus.Conflict => "Kayıt mevcut durumla çakıştı.",
+            AdminPlatformRequestStatus.NotFound => "Kayıt bulunamadı.",
             _ => fallbackMessage
         };
     }

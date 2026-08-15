@@ -27,8 +27,8 @@ public sealed class AdminCafeSettingsFormModel
     [StringLength(160, MinimumLength = 2, ErrorMessage = "Cafe adı 2 ile 160 karakter arasında olmalıdır.")]
     public string Name { get; set; } = string.Empty;
 
-    [StringLength(120, MinimumLength = 2, ErrorMessage = "Slug 2 ile 120 karakter arasında olmalıdır.")]
-    [RegularExpression("^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$", ErrorMessage = "Slug yalnız harf, rakam ve tek tire ayırıcıları içerebilir.")]
+    [StringLength(120, MinimumLength = 2, ErrorMessage = "Menü adresi 2 ile 120 karakter arasında olmalıdır.")]
+    [RegularExpression("^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$", ErrorMessage = "Menü adresi yalnız harf, rakam ve tek tire ayırıcıları içerebilir.")]
     public string? Slug
     {
         get => _slug;

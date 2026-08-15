@@ -408,7 +408,7 @@ public sealed class AdminProductManagementBlazorTests
             new FormUrlEncodedContent(confirmDeleteFields));
         var confirmHtml = await confirmResponse.Content.ReadAsStringAsync();
         Assert.Equal(0, productClient.DeleteProductCallCount);
-        Assert.Contains("soft-delete", confirmHtml, StringComparison.Ordinal);
+        Assert.Contains("listeden kaldırılacak", WebUtility.HtmlDecode(confirmHtml), StringComparison.Ordinal);
 
         var deleteFields = ExtractFormFields(confirmHtml, "ProductActionForm");
         SetFormField(deleteFields, "_productActionModel.Action", "Delete|21");

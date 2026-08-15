@@ -33,7 +33,7 @@
             Cafe="@BuildHeaderCafe()"
             ActiveSection="AdminCafeSection.Settings"
             Kicker="Cafe Ayarları"
-            Summary="Backend tarafından desteklenen temel cafe bilgilerini yönetin." />
+            Summary="Cafe adı, menü adresi ve yayın durumunu yönetin." />
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
         {
@@ -64,7 +64,7 @@
                                     <InputText @bind-Value="_formModel.Name" maxlength="160" />
                                 </label>
                                 <label>
-                                    Slug
+                                    Menü adresi
                                     <InputText @bind-Value="_formModel.Slug" maxlength="120" />
                                 </label>
                             </div>
@@ -79,7 +79,7 @@
                     {
                         <section class="admin-state admin-state-info">
                             <h3>Salt okunur</h3>
-                            <p>Bu cafe için temel ayar değişiklikleri backend policy gereği owner veya platform admin işlemi olarak ele alınır.</p>
+                            <p>Bu cafe için temel ayarları yalnız cafe sahibi veya platform yöneticisi değiştirebilir.</p>
                         </section>
                     }
                 </section>
@@ -96,15 +96,15 @@
                             <dd>@CurrentName</dd>
                         </div>
                         <div>
-                            <dt>Slug</dt>
+                            <dt>Menü adresi</dt>
                             <dd>@CurrentSlug</dd>
                         </div>
                         <div>
-                            <dt>Roller</dt>
-                            <dd>@string.Join(", ", _cafe.RoleCodes)</dd>
+                            <dt>Rol</dt>
+                            <dd>@AdminRoleLabels.DisplayList(_cafe.RoleCodes)</dd>
                         </div>
                         <div>
-                            <dt>Public menü</dt>
+                            <dt>Müşteri menüsü</dt>
                             <dd><a href="@($"/c/{CurrentSlug}")" target="_blank" rel="noopener noreferrer">/c/@CurrentSlug</a></dd>
                         </div>
                     </dl>
@@ -117,13 +117,13 @@
                             </button>
                         </EditForm>
                     }
-                    <p class="admin-security-note">Route üzerindeki cafe id yalnız seçim bağlamıdır. Gerçek tenant authorization her backend çağrısında tekrar uygulanır.</p>
+                    <p class="admin-security-note">Her işlemde cafe erişiminiz yeniden kontrol edilir.</p>
                 </aside>
             </div>
 
             <section class="admin-panel admin-contract-note">
-                <h2>Bu fazda düzenlenmeyen alanlar</h2>
-                <p>Logo ve kapak görseli mevcut branding sözleşmesi üzerinden yönetilir. Aktif/pasif durum için bu fazda fake toggle oluşturulmadı.</p>
+                <h2>Diğer ayarlar</h2>
+                <p>Logo ve kapak görseli görünüm ekranından yönetilir. Aktif veya pasif durum platform yönetimi üzerinden değiştirilir.</p>
             </section>
         }
     }
@@ -240,7 +240,7 @@
 
             if (result.Status == AdminCafeSettingsRequestStatus.ValidationError)
             {
-                SetErrorMessage("Form alanlarını kontrol edin. Backend doğrulaması isteği reddetti.");
+                SetErrorMessage("Form alanlarını kontrol edin. Lütfen değerleri gözden geçirin.");
                 return;
             }
 
@@ -276,7 +276,7 @@
                 return;
             }
 
-            SetErrorMessage("Cafe yayin durumu guncellenemedi.");
+            SetErrorMessage("Cafe yayın durumu güncellenemedi.");
         }
         finally
         {
@@ -339,7 +339,7 @@
 
     private static string GetPublicationActionLabel(bool isPublished)
     {
-        return isPublished ? "Yayindan kaldir" : "Yayinla";
+        return isPublished ? "Yayından kaldır" : "Yayınla";
     }
 
     private static string GetOppositePublicationValue(bool isPublished)
@@ -349,6 +349,6 @@
 
     private static string GetPublicationSuccessMessage(bool isPublished)
     {
-        return isPublished ? "Cafe yayina alindi." : "Cafe yayindan kaldirildi.";
+        return isPublished ? "Cafe yayına alındı." : "Cafe yayından kaldırıldı.";
     }
 }

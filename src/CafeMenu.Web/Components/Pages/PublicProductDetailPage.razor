@@ -54,7 +54,7 @@ else if (_product is not null)
             </div>
         </header>
 
-        <section class="product-detail-body">
+        <section class="@GetDetailBodyClass(_product)">
             @if (!string.IsNullOrWhiteSpace(_product.ImageUrl))
             {
                 <img class="product-detail-image" src="@_product.ImageUrl" alt="@_product.ProductName" loading="eager" />
@@ -117,6 +117,13 @@ else if (_product is not null)
     private static string FormatPrice(decimal price)
     {
         return $"{price.ToString("N2", TurkishCulture)} ₺";
+    }
+
+    private static string GetDetailBodyClass(PublicProductDetailResponse product)
+    {
+        return string.IsNullOrWhiteSpace(product.ImageUrl)
+            ? "product-detail-body product-detail-body-no-image"
+            : "product-detail-body";
     }
 
     private enum PublicProductDetailPageStatus

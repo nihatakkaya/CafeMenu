@@ -338,7 +338,7 @@ public sealed class AdminCategoryManagementBlazorTests
             new FormUrlEncodedContent(confirmDeleteFields));
         var confirmHtml = await confirmResponse.Content.ReadAsStringAsync();
         Assert.Equal(0, categoryClient.DeleteCategoryCallCount);
-        Assert.Contains("soft-delete", confirmHtml, StringComparison.Ordinal);
+        Assert.Contains("listeden kaldırılacak", WebUtility.HtmlDecode(confirmHtml), StringComparison.Ordinal);
 
         var deleteFields = ExtractFormFields(confirmHtml, "CategoryActionForm");
         SetFormField(deleteFields, "_categoryActionModel.Action", "Delete|21");

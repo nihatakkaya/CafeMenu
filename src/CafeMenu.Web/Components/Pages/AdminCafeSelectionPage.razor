@@ -6,7 +6,7 @@
 
 <section class="admin-page admin-cafe-selection">
     <header class="admin-page-header">
-        <p class="admin-kicker">CafeMenu Admin</p>
+        <p class="admin-kicker">CafeMenu Yönetimi</p>
         <h1>Cafe seçimi</h1>
         <p class="admin-page-summary">Yönetim yapmak istediğiniz cafeyi seçin.</p>
     </header>
@@ -59,7 +59,7 @@
                         <span class="@GetPublishedBadgeClass(cafe.IsPublished)">@GetPublishedLabel(cafe.IsPublished)</span>
                         @foreach (var roleCode in cafe.RoleCodes)
                         {
-                            <span class="admin-badge admin-badge-role">@roleCode</span>
+                            <span class="admin-badge admin-badge-role">@AdminRoleLabels.DisplayName(roleCode)</span>
                         }
                     </div>
 

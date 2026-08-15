@@ -71,6 +71,7 @@
 .admin-image-item {
     border: 1px solid #d8dee7;
     border-radius: 8px;
+    background: #ffffff;
     display: grid;
     gap: 0.75rem;
     padding: 1rem;
@@ -103,6 +104,7 @@
 .admin-image-preview {
     border: 1px solid #d8dee7;
     border-radius: 8px;
+    background: #f8fafc;
     max-height: 160px;
     max-width: 100%;
     object-fit: contain;
@@ -288,6 +290,8 @@
 
 .admin-preview-panel {
     align-self: start;
+    position: sticky;
+    top: 84px;
 }
 
 .admin-branding-preview {
@@ -297,6 +301,7 @@
     color: var(--preview-text-color);
     margin-top: 1rem;
     overflow: hidden;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .preview-cover {

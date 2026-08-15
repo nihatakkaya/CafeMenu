@@ -95,7 +95,7 @@
                             <InputTextArea @bind-Value="_createModel.Description" maxlength="2000" />
                         </label>
                         <label class="admin-form-wide">
-                            Görsel URL
+                            Görsel bağlantısı
                             <InputText @bind-Value="_createModel.ImageUrl" maxlength="500" />
                         </label>
                         <label class="admin-check">
@@ -179,7 +179,7 @@
                                                         <InputTextArea @bind-Value="_editModel.Description" maxlength="2000" />
                                                     </label>
                                                     <label class="admin-form-wide">
-                                                        Görsel URL
+                                                        Görsel bağlantısı
                                                         <InputText @bind-Value="_editModel.ImageUrl" maxlength="500" />
                                                     </label>
                                                 </div>
@@ -219,7 +219,7 @@
                                             @if (_pendingDeleteProductId == product.Id)
                                             {
                                                 <div class="admin-confirm" role="alert">
-                                                    <p>@product.Name ürünü soft-delete ile silinecek. Onaylıyor musunuz?</p>
+                                                    <p>@product.Name ürünü listeden kaldırılacak. Onaylıyor musunuz?</p>
                                                     <div class="admin-actions">
                                                         <button class="admin-danger-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildProductAction("Delete", product.Id)" disabled="@_isMutating">Sil</button>
                                                         <button class="admin-secondary-button" type="submit" form="ProductActionForm" name="_productActionModel.Action" value="@BuildProductAction("CancelDelete", product.Id)" disabled="@_isMutating">Vazgeç</button>

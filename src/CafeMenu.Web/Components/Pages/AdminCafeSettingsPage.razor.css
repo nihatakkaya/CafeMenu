@@ -214,6 +214,16 @@
     margin: 1rem 0;
 }
 
+.admin-settings-summary div {
+    border-bottom: 1px solid #edf1f5;
+    padding-bottom: 0.65rem;
+}
+
+.admin-settings-summary div:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
 .admin-settings-summary dt {
     color: #526173;
     font-size: 0.8rem;
@@ -239,6 +249,7 @@
 
 .admin-contract-note {
     background: #f7f9fc;
+    border-style: dashed;
 }
 
 @media (min-width: 820px) {

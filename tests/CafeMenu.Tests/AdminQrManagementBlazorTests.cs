@@ -71,6 +71,8 @@ public sealed class AdminQrManagementBlazorTests
         Assert.Contains("data:image/png;base64,", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/10/qr/download/png\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/10/qr/download/svg\"", html, StringComparison.Ordinal);
+        Assert.Contains("Müşteri Menüsü Bağlantısı", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Public Menü", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("QR Kod", html, StringComparison.Ordinal);
         Assert.DoesNotContain(AccessToken, html, StringComparison.Ordinal);
         Assert.DoesNotContain(RefreshToken, html, StringComparison.Ordinal);
@@ -138,7 +140,7 @@ public sealed class AdminQrManagementBlazorTests
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Public menü şu anda yayınlanmayabilir", html, StringComparison.Ordinal);
+        Assert.Contains("Müşteri menüsü şu anda yayınlanmayabilir", html, StringComparison.Ordinal);
         Assert.Contains("Pasif", html, StringComparison.Ordinal);
         Assert.Contains("Taslak", html, StringComparison.Ordinal);
     }

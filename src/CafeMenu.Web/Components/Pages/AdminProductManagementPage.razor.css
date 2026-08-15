@@ -166,23 +166,26 @@
 .admin-product-groups,
 .admin-product-list {
     display: grid;
-    gap: 0.85rem;
+    gap: 0.9rem;
 }
 
 .admin-product-group {
     display: grid;
     gap: 0.7rem;
+    padding-top: 0.25rem;
 }
 
 .admin-product-group h3 {
-    color: #29384a;
-    font-size: 1rem;
+    color: #25364a;
+    font-size: 1.02rem;
+    font-weight: 850;
     margin: 0.4rem 0 0;
 }
 
 .admin-product-item {
     border: 1px solid #d8dee7;
     border-radius: 8px;
+    background: #ffffff;
     padding: 1rem;
 }
 
@@ -205,8 +208,8 @@
 
 .admin-product-price {
     color: #152233;
-    font-size: 1.05rem;
-    font-weight: 800;
+    font-size: 1.12rem;
+    font-weight: 900;
     white-space: nowrap;
 }
 
@@ -222,17 +225,19 @@
     border-radius: 8px;
     display: block;
     margin-top: 0.6rem;
-    max-height: 120px;
-    max-width: 180px;
+    max-height: 150px;
+    max-width: 220px;
     object-fit: cover;
 }
 
 .admin-image-actions {
-    border-top: 1px solid #edf1f5;
+    background: #f8fafc;
+    border: 1px solid #edf1f5;
+    border-radius: 8px;
     display: grid;
     gap: 0.75rem;
     margin-top: 0.9rem;
-    padding-top: 0.9rem;
+    padding: 0.85rem;
 }
 
 .admin-image-actions form {

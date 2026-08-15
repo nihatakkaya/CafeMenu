@@ -55,7 +55,7 @@ public sealed class AdminCafeSelectionBlazorTests
         await LoginThroughEndpointAsync(client);
 
         using var response = await client.GetAsync("/admin");
-        var html = await response.Content.ReadAsStringAsync();
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(1, cafeClient.GetMyCafesCallCount);
@@ -100,12 +100,20 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("mocca-cafe", html, StringComparison.Ordinal);
         Assert.Contains("https://cdn.example.test/logo.png", html, StringComparison.Ordinal);
         Assert.Contains("Aktif", html, StringComparison.Ordinal);
-        Assert.Contains("Yay&#x131;nda", html, StringComparison.Ordinal);
+        Assert.True(
+            html.Contains("Yayında", StringComparison.Ordinal) ||
+                html.Contains("Yay&#x131;nda", StringComparison.Ordinal),
+            html);
         Assert.Contains("Closed Cafe", html, StringComparison.Ordinal);
         Assert.Contains("Pasif", html, StringComparison.Ordinal);
         Assert.Contains("Taslak", html, StringComparison.Ordinal);
-        Assert.Contains("CAFE_OWNER", html, StringComparison.Ordinal);
-        Assert.Contains("PLATFORM_ADMIN", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Sahibi", html, StringComparison.Ordinal);
+        Assert.True(
+            html.Contains("Platform Yöneticisi", StringComparison.Ordinal) ||
+                html.Contains("Platform Y&#xF6;neticisi", StringComparison.Ordinal),
+            html);
+        Assert.DoesNotContain("CAFE_OWNER", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("PLATFORM_ADMIN", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/10", html, StringComparison.Ordinal);
     }
 
@@ -123,7 +131,7 @@ public sealed class AdminCafeSelectionBlazorTests
         await LoginThroughEndpointAsync(client);
 
         using var response = await client.GetAsync("/admin");
-        var html = await response.Content.ReadAsStringAsync();
+        var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Erişilebilir cafe yok", html, StringComparison.Ordinal);
@@ -172,7 +180,11 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("Shell Cafe", html, StringComparison.Ordinal);
         Assert.Contains("Cafe ID", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
         Assert.Contains(">42<", html, StringComparison.Ordinal);
-        Assert.Contains("CAFE_MANAGER", html, StringComparison.Ordinal);
+        Assert.True(
+            html.Contains("Cafe Yöneticisi", StringComparison.Ordinal) ||
+                html.Contains("Cafe Y&#xF6;neticisi", StringComparison.Ordinal),
+            html);
+        Assert.DoesNotContain("CAFE_MANAGER", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/categories", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/products", html, StringComparison.Ordinal);
         Assert.Contains("/admin/cafes/42/branding", html, StringComparison.Ordinal);
@@ -180,6 +192,8 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Contains("/admin/cafes/42/settings", html, StringComparison.Ordinal);
         Assert.Contains("Cafe Ayarları", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
         Assert.Contains("Dashboard özeti yüklenemedi", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("class=\"nav-link active\" href=\"admin\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"nav-link active\" href=\"admin/platform\"", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -219,16 +233,20 @@ public sealed class AdminCafeSelectionBlazorTests
         Assert.Equal(42, cafeClient.LastDashboardCafeId);
         Assert.Contains("Toplam kategori", html, StringComparison.Ordinal);
         Assert.Contains(">5<", html, StringComparison.Ordinal);
+        Assert.Contains("Kayıtlı kategori", html, StringComparison.Ordinal);
         Assert.Contains("Yayında / görünür kategori", html, StringComparison.Ordinal);
         Assert.Contains(">3<", html, StringComparison.Ordinal);
+        Assert.Contains("Müşteri menüsünde gösterilebilir", html, StringComparison.Ordinal);
         Assert.Contains("Toplam ürün", html, StringComparison.Ordinal);
         Assert.Contains(">18<", html, StringComparison.Ordinal);
+        Assert.Contains("Kayıtlı ürün", html, StringComparison.Ordinal);
         Assert.Contains("Yayında / görünür ürün", html, StringComparison.Ordinal);
         Assert.Contains(">12<", html, StringComparison.Ordinal);
         Assert.Contains("Mevcut ürün", html, StringComparison.Ordinal);
         Assert.Contains(">10<", html, StringComparison.Ordinal);
         Assert.Contains("Tükendi", html, StringComparison.Ordinal);
         Assert.Contains(">8<", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("admin-dashboard-status", html, StringComparison.Ordinal);
     }
 
     [Fact]

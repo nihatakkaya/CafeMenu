@@ -32,14 +32,14 @@
             Cafe="_qrCode.Cafe"
             ActiveSection="AdminCafeSection.Qr"
             Kicker="QR Kod"
-            Summary="Müşterilerin tarayacağı QR kod public menü adresini açar." />
+            Summary="Müşterilerin tarayacağı QR kod müşteri menüsü bağlantısını açar." />
 
         @if (!_qrCode.Cafe.IsActive || !_qrCode.Cafe.IsPublished)
         {
             <section class="admin-state admin-state-warning admin-qr-warning" role="alert">
-                <h2>Public menü şu anda yayınlanmayabilir</h2>
+                <h2>Müşteri menüsü şu anda yayınlanmayabilir</h2>
                 <p>
-                    QR kod oluşturulabilir, ancak cafe pasifse veya taslak durumundaysa müşteri menüsü public olarak görüntülenmez.
+                    QR kod oluşturulabilir, ancak cafe pasifse veya taslak durumundaysa müşteri menüsü görüntülenmez.
                     Yayın durumunu Cafe Ayarları ekranından kontrol edin.
                 </p>
             </section>
@@ -52,19 +52,19 @@
 
             <div class="admin-qr-details">
                 <div>
-                    <p class="admin-kicker">Public Menü URL</p>
+                    <p class="admin-kicker">Müşteri Menüsü Bağlantısı</p>
                     <p class="admin-qr-url">@_qrCode.PublicMenuUrl</p>
                 </div>
 
                 <div class="admin-qr-actions" aria-label="QR kod işlemleri">
                     <a class="admin-primary-button" href="@_qrCode.PngDownloadUrl">PNG indir</a>
                     <a class="admin-secondary-button" href="@_qrCode.SvgDownloadUrl">SVG indir</a>
-                    <a class="admin-secondary-button" href="@($"/c/{_qrCode.Cafe.Slug}")" target="_blank" rel="noopener noreferrer">Public menüyü aç</a>
+                    <a class="admin-secondary-button" href="@($"/c/{_qrCode.Cafe.Slug}")" target="_blank" rel="noopener noreferrer">Müşteri menüsünü aç</a>
                     <a class="admin-secondary-button" href="@($"/admin/cafes/{_qrCode.Cafe.Id}/settings")">Yayın ayarları</a>
                 </div>
 
                 <p class="admin-security-note">
-                    QR içeriği backend'deki cafe slug değerinden üretilir. Bu ekran client tarafından gönderilen URL değerlerini QR içine yazmaz.
+                    QR kod, cafe için kayıtlı müşteri menüsü bağlantısından oluşturulur.
                 </p>
             </div>
         </section>

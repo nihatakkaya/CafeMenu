@@ -40,6 +40,12 @@ public sealed class PublicMenuBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Mocca Cafe", html, StringComparison.Ordinal);
+        Assert.Contains("menu-hero", html, StringComparison.Ordinal);
+        Assert.Contains("menu-search", html, StringComparison.Ordinal);
+        Assert.Contains("category-nav", html, StringComparison.Ordinal);
+        Assert.Contains("product-card", html, StringComparison.Ordinal);
+        Assert.Contains("product-heading", html, StringComparison.Ordinal);
+        Assert.Contains("product-price", html, StringComparison.Ordinal);
         Assert.Contains("Kahveler", html, StringComparison.Ordinal);
         Assert.Contains("Flat White", html, StringComparison.Ordinal);
         Assert.Contains("150,00", html, StringComparison.Ordinal);
@@ -199,6 +205,9 @@ public sealed class PublicMenuBlazorTests
         Assert.Equal(20, apiClient.LastProductDetailProductId);
         Assert.Contains("Flat White", html, StringComparison.Ordinal);
         Assert.Contains("Kahveler", html, StringComparison.Ordinal);
+        Assert.Contains("product-detail-hero", html, StringComparison.Ordinal);
+        Assert.Contains("product-detail-body", html, StringComparison.Ordinal);
+        Assert.Contains("product-detail-price", html, StringComparison.Ordinal);
         Assert.Contains("150,00", html, StringComparison.Ordinal);
         Assert.Contains("/c/mocca-cafe", html, StringComparison.Ordinal);
     }
@@ -217,6 +226,36 @@ public sealed class PublicMenuBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("availability", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task PublicProductDetailPage_ShouldUseSingleColumnClassWhenProductHasNoImage()
+    {
+        await using var factory = new PublicMenuWebApplicationFactory(
+            new FakePublicMenuApiClient(
+                PublicMenuRequestResult.NotFound(),
+                PublicProductDetailRequestResult.Success(CreateProductDetail(imageUrl: null))));
+        using var client = factory.CreateClient();
+
+        using var response = await client.GetAsync("/c/mocca-cafe/products/20");
+        var html = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("product-detail-body-no-image", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("product-detail-image", html, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PublicMenuCss_ShouldKeepDesktopCardsAndDetailLayoutWide()
+    {
+        var root = FindRepositoryRoot();
+        var menuCss = File.ReadAllText(Path.Combine(root, "src", "CafeMenu.Web", "Components", "Pages", "PublicMenuPage.razor.css"));
+        var detailCss = File.ReadAllText(Path.Combine(root, "src", "CafeMenu.Web", "Components", "Pages", "PublicProductDetailPage.razor.css"));
+
+        Assert.Contains("max-width: 1120px", menuCss, StringComparison.Ordinal);
+        Assert.Contains("grid-template-columns: repeat(2, minmax(0, 1fr))", menuCss, StringComparison.Ordinal);
+        Assert.Contains("max-width: 1120px", detailCss, StringComparison.Ordinal);
+        Assert.Contains("product-detail-body-no-image", detailCss, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -356,7 +395,7 @@ public sealed class PublicMenuBlazorTests
         };
     }
 
-    private static PublicProductDetailResponse CreateProductDetail(bool isAvailable = true)
+    private static PublicProductDetailResponse CreateProductDetail(bool isAvailable = true, string? imageUrl = "https://cdn.example.com/flat-white.png")
     {
         return new PublicProductDetailResponse
         {
@@ -380,9 +419,20 @@ public sealed class PublicMenuBlazorTests
             ProductName = "Flat White",
             Description = "Double espresso",
             Price = 150m,
-            ImageUrl = "https://cdn.example.com/flat-white.png",
+            ImageUrl = imageUrl,
             IsAvailable = isAvailable
         };
+    }
+
+    private static string FindRepositoryRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "CafeMenu.slnx")))
+        {
+            directory = directory.Parent;
+        }
+
+        return directory?.FullName ?? throw new InvalidOperationException("Repository root could not be found.");
     }
 
     private sealed class FakePublicMenuApiClient : IPublicMenuApiClient

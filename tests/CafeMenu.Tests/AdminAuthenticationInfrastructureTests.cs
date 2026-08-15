@@ -342,7 +342,10 @@ public sealed class AdminAuthenticationInfrastructureTests
         Assert.Contains("method=\"post\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("action=\"/account/logout\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("name=\"__RequestVerificationToken\"", html, StringComparison.Ordinal);
-        Assert.Contains(">Logout<", html, StringComparison.Ordinal);
+        Assert.Contains("Çıkış", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.DoesNotContain(">Giriş<", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Yönetim panelinden cafelerinizi yönetin", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.DoesNotContain("Cafe yönetimi için giriş yapın", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -357,6 +360,8 @@ public sealed class AdminAuthenticationInfrastructureTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.DoesNotContain("action=\"/account/logout\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain(">Logout<", html, StringComparison.Ordinal);
+        Assert.Contains(">Giriş<", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Cafe yönetimi için giriş yapın", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
     }
 
     [Fact]

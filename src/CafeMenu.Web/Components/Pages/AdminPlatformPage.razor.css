@@ -15,8 +15,8 @@
     border-radius: 8px;
     display: grid;
     gap: 0.35rem;
-    min-height: 104px;
-    padding: 0.9rem;
+    min-height: 122px;
+    padding: 1rem;
 }
 
 .admin-platform-stat-card span {
@@ -27,8 +27,14 @@
 
 .admin-platform-stat-card strong {
     color: #152233;
-    font-size: 2rem;
+    font-size: 2.15rem;
     line-height: 1;
+}
+
+.admin-platform-stat-card small {
+    color: #6a7583;
+    font-size: 0.82rem;
+    line-height: 1.35;
 }
 
 .admin-panel {
@@ -81,7 +87,8 @@
     border-radius: 8px;
     display: grid;
     gap: 0.75rem;
-    padding: 0.9rem;
+    padding: 1rem;
+    background: #ffffff;
 }
 
 .admin-platform-row-main h3 {

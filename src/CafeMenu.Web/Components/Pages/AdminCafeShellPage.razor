@@ -31,13 +31,8 @@
         <AdminCafeHeader
             Cafe="_cafe"
             ActiveSection="AdminCafeSection.Overview"
-            Kicker="Cafe Dashboard"
-            Summary="Bu cafe için durum özetini takip edin ve yönetim alanlarına geçin." />
-
-        <section class="admin-dashboard-status" aria-label="Cafe durum özeti">
-            <span class="@GetActiveBadgeClass(_cafe.IsActive)">@GetActiveLabel(_cafe.IsActive)</span>
-            <span class="@GetPublishedBadgeClass(_cafe.IsPublished)">@GetPublishedLabel(_cafe.IsPublished)</span>
-        </section>
+            Kicker="Cafe Özeti"
+            Summary="Bu cafe için menü durumunu takip edin ve yönetim alanlarına geçin." />
 
         @if (_statsStatus == AdminCafeListStatus.Failure)
         {
@@ -52,26 +47,32 @@
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Toplam kategori</span>
                     <strong>@_stats.TotalCategoryCount</strong>
+                    <span class="admin-stat-helper">Kayıtlı kategori</span>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Yayında / görünür kategori</span>
                     <strong>@_stats.PublicCategoryCount</strong>
+                    <span class="admin-stat-helper">Müşteri menüsünde gösterilebilir</span>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Toplam ürün</span>
                     <strong>@_stats.TotalProductCount</strong>
+                    <span class="admin-stat-helper">Kayıtlı ürün</span>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Yayında / görünür ürün</span>
                     <strong>@_stats.PublicProductCount</strong>
+                    <span class="admin-stat-helper">Müşteri menüsünde görünür</span>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Mevcut ürün</span>
                     <strong>@_stats.AvailableProductCount</strong>
+                    <span class="admin-stat-helper">Satışa açık</span>
                 </article>
                 <article class="admin-stat-card">
                     <span class="admin-stat-label">Tükendi</span>
                     <strong>@_stats.UnavailableProductCount</strong>
+                    <span class="admin-stat-helper">Menüde durumlu kalır</span>
                 </article>
             </section>
         }
@@ -79,7 +80,7 @@
         <section class="admin-shell-grid" aria-label="Cafe yönetim girişleri">
             <a class="admin-shell-card" href="@($"/admin/cafes/{_cafe.Id}/settings")">
                 <span>Cafe Ayarları</span>
-                <p>Ad ve slug gibi backend tarafından desteklenen temel bilgileri yönetin.</p>
+                <p>Cafe adı, menü adresi ve yayın durumunu yönetin.</p>
             </a>
             <a class="admin-shell-card" href="@($"/admin/cafes/{_cafe.Id}/categories")">
                 <span>Kategoriler</span>
@@ -98,14 +99,13 @@
                 <p>Public menü adresini QR olarak önizleyin ve baskı için indirin.</p>
             </a>
             <a class="admin-shell-card" href="@($"/c/{_cafe.Slug}")" target="_blank" rel="noopener noreferrer">
-                <span>Public Menü</span>
-                <p>Yayınlanan müşteri menüsünü mevcut slug ile açın.</p>
+                <span>Müşteri Menüsü</span>
+                <p>Yayınlanan müşteri menüsünü yeni sekmede açın.</p>
             </a>
         </section>
 
         <section class="admin-shell-panel">
-            <p>Bu özet soft-delete edilmiş kayıtları saymaz. Yayında / görünür değerleri public menüye çıkabilecek kategori ve ürünleri gösterir.</p>
-            <p class="admin-security-note">Bu ekran route bilgisini yalnız seçim bağlamı olarak kullanır. Gerçek yetkilendirme her backend API çağrısında tekrar yapılacaktır.</p>
+            <p>Bu özet aktif menü kayıtlarını temel alır. Yayında / görünür değerleri müşterilerin görebileceği kategori ve ürünleri gösterir.</p>
         </section>
     }
 </section>
@@ -141,30 +141,6 @@
         }
 
         _isLoading = false;
-    }
-
-    private static string GetActiveLabel(bool isActive)
-    {
-        return isActive ? "Aktif" : "Pasif";
-    }
-
-    private static string GetPublishedLabel(bool isPublished)
-    {
-        return isPublished ? "Yayında" : "Taslak";
-    }
-
-    private static string GetActiveBadgeClass(bool isActive)
-    {
-        return isActive
-            ? "admin-status-badge admin-status-badge-success"
-            : "admin-status-badge admin-status-badge-muted";
-    }
-
-    private static string GetPublishedBadgeClass(bool isPublished)
-    {
-        return isPublished
-            ? "admin-status-badge admin-status-badge-info"
-            : "admin-status-badge admin-status-badge-muted";
     }
 
 }

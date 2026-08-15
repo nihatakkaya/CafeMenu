@@ -1,6 +1,6 @@
 @using CafeMenu.Web.AdminCafe
 
-<nav class="admin-cafe-breadcrumb" aria-label="Admin navigation">
+<nav class="admin-cafe-breadcrumb" aria-label="Yönetim yolu">
     <a href="/admin">Cafe değiştir</a>
     <span aria-hidden="true">/</span>
     <a href="@OverviewUrl">@Cafe.Name</a>
@@ -16,7 +16,7 @@
         }
         <dl class="admin-cafe-context-details">
             <div>
-                <dt>Slug</dt>
+                <dt>Menü adresi</dt>
                 <dd>@Cafe.Slug</dd>
             </div>
             <div>
@@ -24,8 +24,8 @@
                 <dd>@Cafe.Id</dd>
             </div>
             <div>
-                <dt>Roller</dt>
-                <dd>@string.Join(", ", Cafe.RoleCodes)</dd>
+                <dt>Rol</dt>
+                <dd>@AdminRoleLabels.DisplayList(Cafe.RoleCodes)</dd>
             </div>
         </dl>
     </div>
@@ -42,7 +42,7 @@
     <a class="@GetNavClass(AdminCafeSection.Products)" href="@ProductsUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Products)">Ürünler</a>
     <a class="@GetNavClass(AdminCafeSection.Branding)" href="@BrandingUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Branding)">Görünüm</a>
     <a class="@GetNavClass(AdminCafeSection.Qr)" href="@QrUrl" aria-current="@GetAriaCurrent(AdminCafeSection.Qr)">QR Kod</a>
-    <a class="admin-cafe-nav-link" href="@PublicMenuUrl" target="_blank" rel="noopener noreferrer">Public Menü</a>
+    <a class="admin-cafe-nav-link" href="@PublicMenuUrl" target="_blank" rel="noopener noreferrer">Müşteri Menüsü</a>
     <a class="admin-cafe-nav-link admin-cafe-nav-link-secondary" href="/admin">Cafe değiştir</a>
 </nav>
 
@@ -54,7 +54,7 @@
     public AdminCafeSection ActiveSection { get; set; }
 
     [Parameter]
-    public string Kicker { get; set; } = "Cafe Admin";
+    public string Kicker { get; set; } = "Cafe Yönetimi";
 
     [Parameter]
     public string? Summary { get; set; }

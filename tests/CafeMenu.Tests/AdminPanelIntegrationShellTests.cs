@@ -58,11 +58,15 @@ public sealed class AdminPanelIntegrationShellTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("Integration Cafe", html, StringComparison.Ordinal);
+        Assert.Contains("Yönetim konsolu", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe seçimi", html, StringComparison.Ordinal);
         Assert.Contains("integration-cafe", html, StringComparison.Ordinal);
         Assert.Contains("Pasif", html, StringComparison.Ordinal);
         Assert.Contains("Taslak", html, StringComparison.Ordinal);
-        Assert.Contains("CAFE_OWNER", html, StringComparison.Ordinal);
-        Assert.Contains("CAFE_MANAGER", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Sahibi", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Yöneticisi", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("CAFE_OWNER", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("CAFE_MANAGER", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/42\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/42/settings\"", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/42/categories\"", html, StringComparison.Ordinal);
@@ -100,7 +104,7 @@ public sealed class AdminPanelIntegrationShellTests
         Assert.Contains("Ürünler", html, StringComparison.Ordinal);
         Assert.Contains("Görünüm", html, StringComparison.Ordinal);
         Assert.Contains("QR Kod", html, StringComparison.Ordinal);
-        Assert.Contains("Public Menü", html, StringComparison.Ordinal);
+        Assert.Contains("Müşteri Menüsü", html, StringComparison.Ordinal);
         Assert.Equal(0, categoryClient.GetCategoriesCallCount);
         Assert.Equal(0, productClient.GetProductsCallCount);
     }

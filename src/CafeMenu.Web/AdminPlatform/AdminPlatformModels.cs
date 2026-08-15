@@ -94,16 +94,16 @@ public sealed class AdminPlatformCreateCafeFormModel
     [StringLength(160, MinimumLength = 2, ErrorMessage = "Cafe adi 2 ile 160 karakter arasinda olmalidir.")]
     public string Name { get; set; } = string.Empty;
 
-    [StringLength(120, MinimumLength = 2, ErrorMessage = "Slug 2 ile 120 karakter arasinda olmalidir.")]
-    [RegularExpression("^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$", ErrorMessage = "Slug yalniz harf, rakam ve tire icerebilir.")]
+    [StringLength(120, MinimumLength = 2, ErrorMessage = "Menü adresi 2 ile 120 karakter arasında olmalıdır.")]
+    [RegularExpression("^[a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)*$", ErrorMessage = "Menü adresi yalnız harf, rakam ve tire içerebilir.")]
     public string? Slug { get; set; }
 }
 
 public sealed class AdminPlatformCreateUserSetupFormModel
 {
-    [Required(ErrorMessage = "Email zorunludur.")]
-    [EmailAddress(ErrorMessage = "Email gecersiz.")]
-    [StringLength(320, ErrorMessage = "Email en fazla 320 karakter olabilir.")]
+    [Required(ErrorMessage = "E-posta zorunludur.")]
+    [EmailAddress(ErrorMessage = "E-posta geçersiz.")]
+    [StringLength(320, ErrorMessage = "E-posta en fazla 320 karakter olabilir.")]
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Ad soyad zorunludur.")]

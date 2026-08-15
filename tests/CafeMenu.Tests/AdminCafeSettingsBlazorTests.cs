@@ -177,7 +177,7 @@ public sealed class AdminCafeSettingsBlazorTests
         Assert.Equal(10, settingsClient.LastPublicationCafeId);
         Assert.NotNull(settingsClient.LastPublicationRequest);
         Assert.True(settingsClient.LastPublicationRequest.IsPublished);
-        Assert.Contains("Cafe yayina alindi", postHtml, StringComparison.Ordinal);
+        Assert.Contains("Cafe yayına alındı", postHtml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -262,7 +262,7 @@ public sealed class AdminCafeSettingsBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
         Assert.Equal(0, settingsClient.UpdateSettingsCallCount);
-        Assert.Contains("Slug yalnız harf, rakam ve tek tire", postHtml, StringComparison.Ordinal);
+        Assert.Contains("Menü adresi yalnız harf, rakam ve tek tire", postHtml, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -314,7 +314,7 @@ public sealed class AdminCafeSettingsBlazorTests
         var postHtml = await postResponse.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
-        Assert.Contains("Backend doğrulaması isteği reddetti", WebUtility.HtmlDecode(postHtml), StringComparison.Ordinal);
+        Assert.Contains("Form alanlarını kontrol edin. Lütfen değerleri gözden geçirin.", WebUtility.HtmlDecode(postHtml), StringComparison.Ordinal);
         Assert.DoesNotContain(AccessToken, postHtml, StringComparison.Ordinal);
         Assert.DoesNotContain(RefreshToken, postHtml, StringComparison.Ordinal);
     }

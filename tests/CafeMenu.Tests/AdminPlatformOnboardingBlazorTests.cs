@@ -63,8 +63,8 @@ public sealed class AdminPlatformOnboardingBlazorTests
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Erisim yok", html, StringComparison.Ordinal);
-        Assert.DoesNotContain("Platform yonetimi", html, StringComparison.Ordinal);
+        Assert.Contains("Erişim yok", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Platform yönetimi", html, StringComparison.Ordinal);
         Assert.Equal(0, platformClient.GetCafesCallCount);
     }
 
@@ -89,7 +89,7 @@ public sealed class AdminPlatformOnboardingBlazorTests
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Platform yonetimi", html, StringComparison.Ordinal);
+        Assert.Contains("Platform yönetimi", html, StringComparison.Ordinal);
         Assert.Contains("Mocca Platform", html, StringComparison.Ordinal);
         Assert.Contains("mocca-platform", html, StringComparison.Ordinal);
         Assert.Contains("Pasif", html, StringComparison.Ordinal);
@@ -107,8 +107,10 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Contains("CreatePlatformCafeForm", html, StringComparison.Ordinal);
         Assert.Contains("PlatformCafeActionForm", html, StringComparison.Ordinal);
         Assert.Contains("__RequestVerificationToken", html, StringComparison.Ordinal);
-        AssertFormContainsTokenAndSubmitAction(html, "CreatePlatformCafeForm", "__RequestVerificationToken", "Cafe olustur");
+        AssertFormContainsTokenAndSubmitAction(html, "CreatePlatformCafeForm", "__RequestVerificationToken", "Cafe oluştur");
         AssertFormContainsTokenAndSubmitAction(html, "PlatformCafeActionForm", "Activate|50", "Aktif yap");
+        Assert.Contains("class=\"nav-link active\" href=\"admin/platform\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("class=\"nav-link active\" href=\"admin\"", html, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -136,7 +138,7 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal("New Platform Cafe", platformClient.LastCreateCafeRequest?.Name);
         Assert.Equal("new-platform-cafe", platformClient.LastCreateCafeRequest?.Slug);
-        Assert.Contains("Cafe olusturuldu", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe oluşturuldu", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/admin/cafes/77\"", html, StringComparison.Ordinal);
     }
 
@@ -197,15 +199,17 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Equal(50, platformClient.LastGetMembersCafeId);
         Assert.Contains("Owner User", html, StringComparison.Ordinal);
         Assert.Contains("owner@example.local", html, StringComparison.Ordinal);
-        Assert.Contains("CAFE_OWNER", html, StringComparison.Ordinal);
-        Assert.Contains("User 120", html, StringComparison.Ordinal);
+        Assert.Contains("Cafe Sahibi", html, StringComparison.Ordinal);
+        Assert.Contains("Aktif", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Kullanıcı no", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("CAFE_OWNER", html, StringComparison.Ordinal);
         Assert.DoesNotContain("PasswordHash", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("RefreshToken", html, StringComparison.OrdinalIgnoreCase);
         AssertFormContainsSingleToken(html, "PlatformUserSearchForm");
         AssertFormContainsSingleToken(html, "PlatformUserSearchActionForm");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "Reissue|120", "Reissue");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "AssignOwner|120", "Owner ata");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "AssignManager|120", "Manager ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "Reissue|120", "Yeni kod oluştur");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "AssignOwner|120", "Sahip olarak ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "AssignManager|120", "Yönetici olarak ata");
         AssertFormContainsTokenAndSubmitAction(html, "PlatformMemberActionForm", "Deactivate|900", "Pasif yap");
     }
 
@@ -235,14 +239,15 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Equal("new.owner@example.local", platformClient.LastCreateUserSetupRequest?.Email);
         Assert.Equal("New Owner", platformClient.LastCreateUserSetupRequest?.FullName);
         Assert.Contains(SetupToken, html, StringComparison.Ordinal);
-        Assert.Contains("yalniz bu basarili response sonrasinda gosterilir", html, StringComparison.Ordinal);
+        Assert.Contains("yalnızca bu başarılı işlemden sonra gösterilir", html, StringComparison.Ordinal);
         Assert.Contains("href=\"/account/setup\"", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Kullanıcı no", html, StringComparison.Ordinal);
         Assert.DoesNotContain($"/account/setup?token={SetupToken}", html, StringComparison.Ordinal);
         Assert.DoesNotContain("localStorage", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("sessionStorage", html, StringComparison.OrdinalIgnoreCase);
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "Reissue|120", "Token yeniden uret");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "AssignOwner|120", "Owner ata");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "AssignManager|120", "Manager ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "Reissue|120", "Yeni kod oluştur");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "AssignOwner|120", "Sahip olarak ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformSetupActionForm", "AssignManager|120", "Yönetici olarak ata");
 
         using var refreshResponse = await client.GetAsync("/admin/platform/cafes/50/members");
         var refreshHtml = await refreshResponse.Content.ReadAsStringAsync();
@@ -266,7 +271,7 @@ public sealed class AdminPlatformOnboardingBlazorTests
 
         await LoginThroughEndpointAsync(client, "/admin/platform/cafes/50/members");
         var page = await client.GetStringAsync("/admin/platform/cafes/50/members");
-        AssertFormContainsTokenAndSubmitAction(page, "PlatformUserSearchForm", "__RequestVerificationToken", "Kullanici ara");
+        AssertFormContainsTokenAndSubmitAction(page, "PlatformUserSearchForm", "__RequestVerificationToken", "Kullanıcı ara");
 
         var form = ExtractFormFields(page, "PlatformUserSearchForm");
         form["_userSearchModel.Query"] = "found owner";
@@ -279,13 +284,13 @@ public sealed class AdminPlatformOnboardingBlazorTests
         Assert.Equal(1, platformClient.SearchUsersCallCount);
         Assert.Contains("Searchable Owner", html, StringComparison.Ordinal);
         Assert.Contains("searchable.owner@example.local", html, StringComparison.Ordinal);
-        Assert.Contains("User 444", html, StringComparison.Ordinal);
         Assert.Contains("Aktif", html, StringComparison.Ordinal);
+        Assert.DoesNotContain("Kullanıcı no", html, StringComparison.Ordinal);
         Assert.DoesNotContain("PasswordHash", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("SetupToken", html, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("tokenHash", html, StringComparison.OrdinalIgnoreCase);
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformUserSearchActionForm", "AssignOwner|444", "Owner ata");
-        AssertFormContainsTokenAndSubmitAction(html, "PlatformUserSearchActionForm", "AssignManager|444", "Manager ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformUserSearchActionForm", "AssignOwner|444", "Sahip olarak ata");
+        AssertFormContainsTokenAndSubmitAction(html, "PlatformUserSearchActionForm", "AssignManager|444", "Yönetici olarak ata");
     }
 
     [Fact]

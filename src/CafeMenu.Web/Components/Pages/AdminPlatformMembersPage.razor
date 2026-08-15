@@ -3,44 +3,44 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IAdminPlatformApiClient AdminPlatformApiClient
 
-<PageTitle>Platform Cafe Uyeleri</PageTitle>
+<PageTitle>Cafe Kullanıcıları</PageTitle>
 
 <section class="admin-page admin-platform-page">
     @if (_isLoading)
     {
         <section class="admin-state" aria-live="polite">
-            <h1>Yukleniyor</h1>
-            <p>Cafe uyeleri hazirlaniyor.</p>
+            <h1>Yükleniyor</h1>
+            <p>Cafe kullanıcıları hazırlanıyor.</p>
         </section>
     }
     else if (!_isPlatformAdmin)
     {
         <section class="admin-state admin-state-denied" role="alert">
-            <h1>Erisim yok</h1>
-            <p>Bu alan yalniz platform admin yetkisine sahip kullanicilar icindir.</p>
+            <h1>Erişim yok</h1>
+            <p>Bu alan yalnız platform yöneticileri için kullanılabilir.</p>
         </section>
     }
     else if (_cafe is null)
     {
         <section class="admin-state admin-state-denied" role="alert">
-            <h1>Cafe bulunamadi</h1>
-            <p>Bu cafe platform yonetimi icin erisilebilir degil.</p>
+            <h1>Cafe bulunamadı</h1>
+            <p>Bu cafe platform yönetimi için erişilebilir değil.</p>
         </section>
     }
     else
     {
-        <nav class="admin-cafe-breadcrumb" aria-label="Platform admin navigation">
-            <a href="/admin/platform">Platform Admin</a>
+        <nav class="admin-cafe-breadcrumb" aria-label="Platform yönetimi yolu">
+            <a href="/admin/platform">Platform Yönetimi</a>
             <span aria-hidden="true">/</span>
             <a href="@($"/admin/cafes/{_cafe.Id}")">@_cafe.Name</a>
             <span aria-hidden="true">/</span>
-            <span>Uyeler</span>
+            <span>Kullanıcılar</span>
         </nav>
 
         <header class="admin-page-header">
-            <p class="admin-kicker">Platform Cafe Uyeleri</p>
+            <p class="admin-kicker">Cafe Kullanıcıları</p>
             <h1>@_cafe.Name</h1>
-            <p class="admin-page-summary">Cafe owner ve manager uyeliklerini semantic backend actionlariyla yonetin.</p>
+            <p class="admin-page-summary">Cafe sahiplerini ve yöneticilerini güvenli şekilde oluşturun veya atayın.</p>
         </header>
 
         @if (!string.IsNullOrWhiteSpace(_pageMessage))
@@ -51,16 +51,12 @@
         @if (_lastSetup is not null)
         {
             <section class="admin-panel admin-platform-token-panel" role="status">
-                <h2>Setup token olusturuldu</h2>
-                <p>Bu token yalniz bu basarili response sonrasinda gosterilir. Yenileme sonrasi tekrar gosterilmez.</p>
-                <p>Sifre belirleme sayfasi: <a href="/account/setup">/account/setup</a></p>
+                <h2>Kurulum kodu oluşturuldu</h2>
+                <p>Bu kod yalnızca bu başarılı işlemden sonra gösterilir. Sayfa yenilenirse tekrar gösterilmez.</p>
+                <p>Şifre belirleme sayfası: <a href="/account/setup">/account/setup</a></p>
                 <dl class="admin-platform-token-details">
                     <div>
-                        <dt>User ID</dt>
-                        <dd>@_lastSetup.UserId</dd>
-                    </div>
-                    <div>
-                        <dt>Email</dt>
+                        <dt>E-posta</dt>
                         <dd>@_lastSetup.Email</dd>
                     </div>
                     <div>
@@ -68,35 +64,35 @@
                         <dd>@_lastSetup.FullName</dd>
                     </div>
                     <div>
-                        <dt>Expires</dt>
+                        <dt>Geçerlilik</dt>
                         <dd>@_lastSetup.SetupTokenExpiresAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd>
                     </div>
                     <div class="admin-platform-token-value">
-                        <dt>Setup token</dt>
+                        <dt>Kurulum kodu</dt>
                         <dd><code>@_lastSetup.SetupToken</code></dd>
                     </div>
                 </dl>
                 <EditForm Model="_setupActionModel" OnSubmit="HandleSetupActionAsync" FormName="PlatformSetupActionForm" id="PlatformSetupActionForm" method="post">
                     <div class="admin-actions">
-                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("Reissue", _lastSetup.UserId)" disabled="@_isMutating">Token yeniden uret</button>
-                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignOwner", _lastSetup.UserId)" disabled="@_isMutating">Owner ata</button>
-                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignManager", _lastSetup.UserId)" disabled="@_isMutating">Manager ata</button>
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("Reissue", _lastSetup.UserId)" disabled="@_isMutating">Yeni kod oluştur</button>
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignOwner", _lastSetup.UserId)" disabled="@_isMutating">Sahip olarak ata</button>
+                        <button class="admin-secondary-button" type="submit" name="_setupActionModel.Action" value="@BuildMemberAction("AssignManager", _lastSetup.UserId)" disabled="@_isMutating">Yönetici olarak ata</button>
                     </div>
                 </EditForm>
-                <p class="admin-security-note">Token hidden field, cookie veya browser storage icine yazilmaz.</p>
+                <p class="admin-security-note">Kurulum kodu sayfada kalıcı olarak saklanmaz.</p>
             </section>
         }
 
         <section class="admin-platform-layout">
             <section class="admin-panel">
-                <h2>Yeni kullanici setup</h2>
+                <h2>Yeni kullanıcı oluştur</h2>
                 <EditForm Model="_createUserSetupModel" OnValidSubmit="CreateUserSetupAsync" FormName="CreatePlatformUserSetupForm" id="CreatePlatformUserSetupForm" method="post">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
                     <div class="admin-form-grid">
                         <label>
-                            Email
+                            E-posta
                             <InputText @bind-Value="_createUserSetupModel.Email" maxlength="320" />
                         </label>
                         <label>
@@ -105,30 +101,30 @@
                         </label>
                     </div>
 
-                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Setup olustur</button>
+                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Kurulum kodu oluştur</button>
                 </EditForm>
             </section>
 
             <section class="admin-panel">
-                <h2>Aktif kullanici ara</h2>
+                <h2>Aktif kullanıcı ara</h2>
                 <EditForm Model="_userSearchModel" OnValidSubmit="SearchUsersAsync" FormName="PlatformUserSearchForm" id="PlatformUserSearchForm" method="post">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
 
                     <div class="admin-form-grid">
                         <label>
-                            Email veya ad soyad
+                            E-posta veya ad soyad
                             <InputText @bind-Value="_userSearchModel.Query" maxlength="320" />
                         </label>
                     </div>
 
-                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Kullanici ara</button>
+                    <button class="admin-primary-button" type="submit" disabled="@_isMutating">Kullanıcı ara</button>
                 </EditForm>
             </section>
 
             <section class="admin-panel">
                 <div class="admin-list-header">
-                    <h2>Uyeler</h2>
+                    <h2>Kullanıcılar</h2>
                     <a class="admin-secondary-button" href="@CurrentMembersRoute">Yenile</a>
                 </div>
 
@@ -136,15 +132,15 @@
                     @if (_membersLoadFailed)
                     {
                         <section class="admin-state admin-state-warning" role="alert">
-                            <h3>Uyeler yuklenemedi</h3>
-                            <p>Bu cafe icin uye listesi su anda alinamiyor.</p>
+                            <h3>Kullanıcılar yüklenemedi</h3>
+                            <p>Bu cafe için kullanıcı listesi şu anda alınamıyor.</p>
                         </section>
                     }
                     else if (_members.Count == 0)
                     {
                         <section class="admin-state">
-                            <h3>Aktif uye yok</h3>
-                            <p>Bu cafe icin aktif owner veya manager uyeligi bulunmuyor.</p>
+                            <h3>Aktif kullanıcı yok</h3>
+                            <p>Bu cafe için aktif sahip veya yönetici ataması bulunmuyor.</p>
                         </section>
                     }
                     else
@@ -158,14 +154,13 @@
                                         <p>@member.Email</p>
                                     </div>
                                     <div class="admin-cafe-meta">
-                                        <span class="admin-badge admin-badge-role">@member.RoleCode</span>
+                                        <span class="admin-badge admin-badge-role">@AdminRoleLabels.DisplayName(member.RoleCode)</span>
                                         <span class="@GetActiveBadgeClass(member.IsActive)">@GetActiveLabel(member.IsActive)</span>
-                                        <span class="admin-badge admin-badge-muted">User @member.AppUserId</span>
                                     </div>
                                     <div class="admin-actions">
-                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("Reissue", member.AppUserId)" disabled="@_isMutating">Reissue</button>
-                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignOwner", member.AppUserId)" disabled="@_isMutating">Owner ata</button>
-                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignManager", member.AppUserId)" disabled="@_isMutating">Manager ata</button>
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("Reissue", member.AppUserId)" disabled="@_isMutating">Yeni kod oluştur</button>
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignOwner", member.AppUserId)" disabled="@_isMutating">Sahip olarak ata</button>
+                                        <button class="admin-secondary-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("AssignManager", member.AppUserId)" disabled="@_isMutating">Yönetici olarak ata</button>
                                         <button class="admin-danger-button" type="submit" name="_memberActionModel.Action" value="@BuildMemberAction("Deactivate", member.MembershipId)" disabled="@_isMutating">Pasif yap</button>
                                     </div>
                                 </article>
@@ -180,15 +175,15 @@
                 {
                     <section class="admin-panel">
                         <div class="admin-list-header">
-                            <h2>Arama sonuclari</h2>
-                            <span class="admin-badge admin-badge-muted">@_searchedUsers.Count sonuc</span>
+                            <h2>Arama sonuçları</h2>
+                            <span class="admin-badge admin-badge-muted">@_searchedUsers.Count sonuç</span>
                         </div>
 
                         @if (_searchedUsers.Count == 0)
                         {
                             <section class="admin-state">
-                                <h3>Kullanici bulunamadi</h3>
-                                <p>Arama metniyle eslesen aktif kullanici bulunamadi.</p>
+                                <h3>Kullanıcı bulunamadı</h3>
+                                <p>Arama metniyle eşleşen aktif kullanıcı bulunamadı.</p>
                             </section>
                         }
                         else
@@ -203,11 +198,10 @@
                                         </div>
                                         <div class="admin-cafe-meta">
                                             <span class="@GetActiveBadgeClass(user.IsActive)">@GetActiveLabel(user.IsActive)</span>
-                                            <span class="admin-badge admin-badge-muted">User @user.AppUserId</span>
                                         </div>
                                         <div class="admin-actions">
-                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignOwner", user.AppUserId)" disabled="@_isMutating">Owner ata</button>
-                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignManager", user.AppUserId)" disabled="@_isMutating">Manager ata</button>
+                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignOwner", user.AppUserId)" disabled="@_isMutating">Sahip olarak ata</button>
+                                            <button class="admin-secondary-button" type="submit" name="_userSearchActionModel.Action" value="@BuildMemberAction("AssignManager", user.AppUserId)" disabled="@_isMutating">Yönetici olarak ata</button>
                                         </div>
                                     </article>
                                 }
@@ -313,11 +307,11 @@
             {
                 _lastSetup = result.UserSetup;
                 _createUserSetupModel = new AdminPlatformCreateUserSetupFormModel();
-                SetSuccessMessage("Kullanici setup token olusturuldu.");
+                SetSuccessMessage("Kurulum kodu oluşturuldu.");
                 return;
             }
 
-            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanici setup olusturulamadi."));
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kurulum kodu oluşturulamadı."));
         });
     }
 
@@ -378,7 +372,7 @@
             }
 
             _searchedUsers = [];
-            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanici aramasi yapilamadi."));
+            SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanıcı araması yapılamadı."));
         });
     }
 
@@ -445,11 +439,11 @@
         if (result.Status == AdminPlatformRequestStatus.Success && result.UserSetup is not null)
         {
             _lastSetup = result.UserSetup;
-            SetSuccessMessage("Setup token yeniden olusturuldu.");
+            SetSuccessMessage("Yeni kurulum kodu oluşturuldu.");
             return;
         }
 
-        SetErrorMessage(GetMutationFailureMessage(result.Status, "Setup token yeniden olusturulamadi."));
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Yeni kurulum kodu oluşturulamadı."));
     }
 
     private async Task AssignMembershipAsync(long userId, bool isOwner)
@@ -467,11 +461,11 @@
         if (result.Status == AdminPlatformRequestStatus.Success)
         {
             await LoadMembersAsync();
-            SetSuccessMessage(isOwner ? "Owner atandi." : "Manager atandi.");
+            SetSuccessMessage(isOwner ? "Cafe sahibi atandı." : "Cafe yöneticisi atandı.");
             return;
         }
 
-        SetErrorMessage(GetMutationFailureMessage(result.Status, "Uyelik atanamadi. Kullanici setup tamamlamamis olabilir."));
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanıcı atanamadı. Şifre kurulumu tamamlanmamış olabilir."));
     }
 
     private async Task DeactivateMembershipAsync(long membershipId)
@@ -480,11 +474,11 @@
         if (result.Status == AdminPlatformRequestStatus.Success)
         {
             await LoadMembersAsync();
-            SetSuccessMessage("Uyelik pasif hale getirildi.");
+            SetSuccessMessage("Kullanıcı ataması pasif hale getirildi.");
             return;
         }
 
-        SetErrorMessage(GetMutationFailureMessage(result.Status, "Uyelik pasif hale getirilemedi."));
+        SetErrorMessage(GetMutationFailureMessage(result.Status, "Kullanıcı ataması pasif hale getirilemedi."));
     }
 
     private async Task LoadMembersAsync()
@@ -577,10 +571,10 @@
     {
         return status switch
         {
-            AdminPlatformRequestStatus.ValidationError => "Form alanlarini kontrol edin.",
-            AdminPlatformRequestStatus.UnauthorizedOrForbidden => "Bu islem icin yetkiniz yok.",
-            AdminPlatformRequestStatus.Conflict => "Islem mevcut durumla cakisti.",
-            AdminPlatformRequestStatus.NotFound => "Kayit bulunamadi.",
+            AdminPlatformRequestStatus.ValidationError => "Form alanlarını kontrol edin.",
+            AdminPlatformRequestStatus.UnauthorizedOrForbidden => "Bu işlem için yetkiniz yok.",
+            AdminPlatformRequestStatus.Conflict => "İşlem mevcut durumla çakıştı.",
+            AdminPlatformRequestStatus.NotFound => "Kayıt bulunamadı.",
             _ => fallbackMessage
         };
     }

@@ -40,10 +40,20 @@ public sealed class AccountSetupBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("no-store", response.Headers.CacheControl?.ToString(), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("Sifrenizi belirleyin", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Şifrenizi belirleyin", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Kurulum kodu", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Yeni şifre", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("Yeni şifre tekrarı", WebUtility.HtmlDecode(html), StringComparison.Ordinal);
+        Assert.Contains("account-setup-panel", html, StringComparison.Ordinal);
+        Assert.Contains("account-policy-list", html, StringComparison.Ordinal);
         Assert.Contains("id=\"CompleteAccountSetupForm\"", html, StringComparison.Ordinal);
         Assert.Contains("method=\"post\"", html, StringComparison.OrdinalIgnoreCase);
-        Assert.Equal(1, CountAntiforgeryTokenInputs(ExtractFormHtml(html, "CompleteAccountSetupForm")));
+        var formHtml = ExtractFormHtml(html, "CompleteAccountSetupForm");
+        Assert.Equal(1, CountAntiforgeryTokenInputs(formHtml));
+        Assert.Equal(3, CountNonHiddenInputs(formHtml));
+        Assert.Contains("name=\"_formModel.Token\"", formHtml, StringComparison.Ordinal);
+        Assert.Contains("name=\"_formModel.Password\"", formHtml, StringComparison.Ordinal);
+        Assert.Contains("name=\"_formModel.ConfirmPassword\"", formHtml, StringComparison.Ordinal);
         Assert.Contains("type=\"password\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("autocomplete=\"new-password\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("autocomplete=\"off\"", html, StringComparison.OrdinalIgnoreCase);
@@ -97,7 +107,7 @@ public sealed class AccountSetupBlazorTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Equal(0, setupClient.CompleteCallCount);
-        Assert.Contains("Form alanlarini kontrol edin", html, StringComparison.Ordinal);
+        Assert.Contains("Form alanlarını kontrol edin", html, StringComparison.Ordinal);
         Assert.DoesNotContain(SetupToken, html, StringComparison.Ordinal);
         Assert.DoesNotContain(ValidPassword, html, StringComparison.Ordinal);
         Assert.DoesNotContain("DifferentPassword123!", html, StringComparison.Ordinal);
@@ -105,9 +115,9 @@ public sealed class AccountSetupBlazorTests
     }
 
     [Theory]
-    [InlineData(AccountSetupStatus.InvalidToken, "Setup kodu gecersiz")]
-    [InlineData(AccountSetupStatus.ValidationError, "Sifre kurallarini kontrol edin")]
-    [InlineData(AccountSetupStatus.Failure, "Sifre belirleme islemi su anda tamamlanamiyor")]
+    [InlineData(AccountSetupStatus.InvalidToken, "Kurulum kodu geçersiz")]
+    [InlineData(AccountSetupStatus.ValidationError, "Şifre kurallarını kontrol edin")]
+    [InlineData(AccountSetupStatus.Failure, "Şifre belirleme işlemi şu anda tamamlanamıyor")]
     public async Task AccountSetup_ApiFailures_ShouldRenderSafeMessagesWithoutSensitiveValues(
         AccountSetupStatus status,
         string expectedMessage)
@@ -148,7 +158,13 @@ public sealed class AccountSetupBlazorTests
         var html = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Hesabiniz hazir. Simdi giris yapabilirsiniz.", html, StringComparison.Ordinal);
+        Assert.Contains("Hesabınız hazır. Şimdi giriş yapabilirsiniz.", html, StringComparison.Ordinal);
+        Assert.Contains("CafeMenu Yönetimi", html, StringComparison.Ordinal);
+        Assert.Contains("Yönetici Girişi", html, StringComparison.Ordinal);
+        Assert.Contains("E-posta", html, StringComparison.Ordinal);
+        Assert.Contains("Şifre", html, StringComparison.Ordinal);
+        Assert.Contains("Giriş Yap", html, StringComparison.Ordinal);
+        Assert.Contains("Yönetim hesabınızla güvenli şekilde giriş yapın.", html, StringComparison.Ordinal);
         Assert.Contains("action=\"/account/login\"", html, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("name=\"__RequestVerificationToken\"", html, StringComparison.Ordinal);
         Assert.DoesNotContain(SetupToken, html, StringComparison.Ordinal);
@@ -174,6 +190,21 @@ public sealed class AccountSetupBlazorTests
         Assert.DoesNotContain("token=", accountSetupSource, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("FormName=\"CompleteAccountSetupForm\"", accountSetupSource, StringComparison.Ordinal);
         Assert.Contains("[SupplyParameterFromForm(FormName = \"CompleteAccountSetupForm\", Name = \"_formModel\")]", accountSetupSource, StringComparison.Ordinal);
+
+        var accountSetupCss = File.ReadAllText(Path.Combine(
+            root,
+            "src",
+            "CafeMenu.Web",
+            "Components",
+            "Pages",
+            "AccountSetupPage.razor.css"));
+
+        Assert.Contains(".account-setup-panel ::deep input", accountSetupCss, StringComparison.Ordinal);
+        Assert.Contains("box-sizing: border-box;", accountSetupCss, StringComparison.Ordinal);
+        Assert.Contains("min-height: 44px;", accountSetupCss, StringComparison.Ordinal);
+        Assert.Contains("border-radius: var(--cm-radius-sm);", accountSetupCss, StringComparison.Ordinal);
+        Assert.Contains("padding: 0.65rem 0.75rem;", accountSetupCss, StringComparison.Ordinal);
+        Assert.DoesNotContain("!important", accountSetupCss, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -282,6 +313,14 @@ public sealed class AccountSetupBlazorTests
         return Regex.Matches(
             formHtml,
             @"<input(?=[^>]*name=""__RequestVerificationToken"")[^>]*>",
+            RegexOptions.CultureInvariant | RegexOptions.IgnoreCase).Count;
+    }
+
+    private static int CountNonHiddenInputs(string formHtml)
+    {
+        return Regex.Matches(
+            formHtml,
+            @"<input(?![^>]*type=""hidden"")[^>]*>",
             RegexOptions.CultureInvariant | RegexOptions.IgnoreCase).Count;
     }
 

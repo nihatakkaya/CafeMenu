@@ -324,7 +324,7 @@ public sealed class AdminBrandingManagementBlazorTests
         var postHtml = await postResponse.Content.ReadAsStringAsync();
 
         Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
-        Assert.Contains("Backend doğrulaması isteği reddetti", WebUtility.HtmlDecode(postHtml), StringComparison.Ordinal);
+        Assert.Contains("Form alanlarını kontrol edin. Lütfen değerleri gözden geçirin.", WebUtility.HtmlDecode(postHtml), StringComparison.Ordinal);
         Assert.DoesNotContain(AccessToken, postHtml, StringComparison.Ordinal);
         Assert.DoesNotContain(RefreshToken, postHtml, StringComparison.Ordinal);
     }

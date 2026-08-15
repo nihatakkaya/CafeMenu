@@ -53,7 +53,7 @@
             @if (_isDefaultTheme)
             {
                 <section class="admin-message admin-message-info" role="status">
-                    Varsayılan tema değerleri gösteriliyor. İlk kayıtta backend mevcut upsert davranışıyla cafe theme kaydını oluşturur.
+                    Varsayılan tema değerleri gösteriliyor. Kaydettiğinizde bu cafe için görünüm ayarları hazırlanır.
                 </section>
             }
 
@@ -125,15 +125,15 @@
 
                         <div class="admin-form-grid">
                             <label>
-                                Logo referansı
+                                Logo bağlantısı
                                 <InputText @bind-Value="_formModel.LogoImageUrl" maxlength="500" />
                             </label>
                             <label>
-                                Kapak görseli referansı
+                                Kapak görseli bağlantısı
                                 <InputText @bind-Value="_formModel.CoverImageUrl" maxlength="500" />
                             </label>
                             <label>
-                                Tema preset
+                                Tema
                                 <InputSelect @bind-Value="_formModel.ThemePreset">
                                     @foreach (var preset in AdminBrandingConstants.ThemePresets)
                                     {
@@ -142,7 +142,7 @@
                                 </InputSelect>
                             </label>
                             <label>
-                                Font preset
+                                Yazı tipi
                                 <InputSelect @bind-Value="_formModel.FontPreset">
                                     @foreach (var preset in AdminBrandingConstants.FontPresets)
                                     {
@@ -151,27 +151,27 @@
                                 </InputSelect>
                             </label>
                             <label>
-                                Primary color
+                                Ana renk
                                 <InputText type="color" @bind-Value="_formModel.PrimaryColor" />
                                 <span class="admin-color-value">@_formModel.PrimaryColor</span>
                             </label>
                             <label>
-                                Secondary color
+                                İkincil renk
                                 <InputText type="color" @bind-Value="_formModel.SecondaryColor" />
                                 <span class="admin-color-value">@_formModel.SecondaryColor</span>
                             </label>
                             <label>
-                                Accent color
+                                Vurgu rengi
                                 <InputText type="color" @bind-Value="_formModel.AccentColor" />
                                 <span class="admin-color-value">@_formModel.AccentColor</span>
                             </label>
                             <label>
-                                Background color
+                                Arka plan rengi
                                 <InputText type="color" @bind-Value="_formModel.BackgroundColor" />
                                 <span class="admin-color-value">@_formModel.BackgroundColor</span>
                             </label>
                             <label>
-                                Text color
+                                Metin rengi
                                 <InputText type="color" @bind-Value="_formModel.TextColor" />
                                 <span class="admin-color-value">@_formModel.TextColor</span>
                             </label>
@@ -185,7 +185,7 @@
                             </label>
                             <label class="admin-check">
                                 <InputCheckbox @bind-Value="_formModel.IsPublished" />
-                                Public menüde yayınla
+                                Müşteri menüsünde yayınla
                             </label>
                         </div>
 
@@ -202,7 +202,7 @@
                         <div class="preview-cover">
                             @if (!string.IsNullOrWhiteSpace(_formModel.CoverImageUrl))
                             {
-                                <span>Kapak referansı tanımlı</span>
+                                <span>Kapak görseli tanımlı</span>
                             }
                         </div>
                         <div class="preview-body">
@@ -341,7 +341,7 @@
 
             if (result.Status == AdminBrandingRequestStatus.ValidationError)
             {
-                SetErrorMessage("Form alanlarını kontrol edin. Backend doğrulaması isteği reddetti.");
+                SetErrorMessage("Form alanlarını kontrol edin. Lütfen değerleri gözden geçirin.");
                 return;
             }
 

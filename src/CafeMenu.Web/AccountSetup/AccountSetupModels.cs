@@ -4,17 +4,17 @@ namespace CafeMenu.Web.AccountSetup;
 
 public sealed class AccountSetupFormModel
 {
-    [Required(ErrorMessage = "Setup kodu zorunludur.")]
-    [StringLength(256, MinimumLength = 32, ErrorMessage = "Setup kodu gecersiz gorunuyor.")]
+    [Required(ErrorMessage = "Kurulum kodu zorunludur.")]
+    [StringLength(256, MinimumLength = 32, ErrorMessage = "Kurulum kodu geçersiz görünüyor.")]
     public string Token { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Yeni sifre zorunludur.")]
-    [StringLength(128, MinimumLength = 1, ErrorMessage = "Yeni sifre gecersiz.")]
+    [Required(ErrorMessage = "Yeni şifre zorunludur.")]
+    [StringLength(128, MinimumLength = 1, ErrorMessage = "Yeni şifre geçersiz.")]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Sifre tekrari zorunludur.")]
-    [StringLength(128, MinimumLength = 1, ErrorMessage = "Sifre tekrari gecersiz.")]
-    [Compare(nameof(Password), ErrorMessage = "Sifreler ayni olmalidir.")]
+    [Required(ErrorMessage = "Şifre tekrarı zorunludur.")]
+    [StringLength(128, MinimumLength = 1, ErrorMessage = "Şifre tekrarı geçersiz.")]
+    [Compare(nameof(Password), ErrorMessage = "Şifreler aynı olmalıdır.")]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 

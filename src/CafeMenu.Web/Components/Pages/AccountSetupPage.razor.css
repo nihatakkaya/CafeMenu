@@ -3,26 +3,26 @@
     display: grid;
     place-items: center;
     padding: 2rem 1rem;
-    background: #f5f7fa;
-    color: #17202a;
+    background: var(--cm-bg);
+    color: var(--cm-text);
 }
 
 .account-setup-panel {
     width: min(100%, 32rem);
     display: grid;
     gap: 1rem;
-    padding: 1.5rem;
-    border: 1px solid #d9e2ec;
-    border-radius: 8px;
-    background: #ffffff;
-    box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+    padding: 1.35rem;
+    border: 1px solid var(--cm-border);
+    border-radius: var(--cm-radius);
+    background: var(--cm-surface);
+    box-shadow: var(--cm-shadow);
 }
 
 .account-kicker {
     margin: 0;
-    color: #1f6feb;
+    color: #436078;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 850;
     text-transform: uppercase;
 }
 
@@ -35,32 +35,52 @@
 .account-summary,
 .account-secondary-link {
     margin: 0;
-    color: #5b6776;
+    color: var(--cm-text-muted);
+    line-height: 1.5;
 }
 
-.account-setup-panel form {
+.account-setup-panel ::deep form {
     display: grid;
-    gap: 0.85rem;
+    gap: 0.95rem;
 }
 
 .account-setup-panel label {
     display: grid;
-    gap: 0.35rem;
-    font-weight: 700;
+    gap: 0.42rem;
+    color: #25364a;
+    font-weight: 750;
 }
 
-.account-setup-panel input {
-    min-height: 2.75rem;
+.account-setup-panel ::deep input {
+    box-sizing: border-box;
+    min-height: 44px;
     width: 100%;
-    border: 1px solid #b9c6d3;
-    border-radius: 6px;
+    border: 1px solid var(--cm-border-strong);
+    border-radius: var(--cm-radius-sm);
+    background: #ffffff;
+    color: var(--cm-text);
     padding: 0.65rem 0.75rem;
     font: inherit;
+    font-size: 1rem;
+    line-height: 1.5;
+    outline: 0;
+    transition: border-color 140ms ease, box-shadow 140ms ease;
 }
 
-.account-setup-panel input:focus {
-    outline: 3px solid rgba(31, 111, 235, 0.18);
-    border-color: #1f6feb;
+.account-setup-panel ::deep input.valid.modified:not([type="checkbox"]),
+.account-setup-panel ::deep input.invalid {
+    outline: 0;
+}
+
+.account-setup-panel ::deep input.invalid {
+    border-color: var(--cm-danger-border);
+}
+
+.account-setup-panel ::deep input:focus,
+.account-setup-panel ::deep input:focus-visible {
+    outline: 0;
+    border-color: var(--cm-primary-hover);
+    box-shadow: var(--cm-focus);
 }
 
 .account-policy-list {
@@ -72,11 +92,11 @@
 
 .account-setup-panel button {
     min-height: 2.8rem;
-    border: 0;
-    border-radius: 6px;
-    background: #17202a;
+    border: 1px solid var(--cm-primary);
+    border-radius: var(--cm-radius-sm);
+    background: var(--cm-primary);
     color: #ffffff;
-    font-weight: 700;
+    font-weight: 850;
 }
 
 .account-setup-panel button:disabled {
@@ -90,8 +110,9 @@
 }
 
 .account-message-error {
-    background: #fff1f2;
-    color: #9f1239;
+    background: var(--cm-danger-bg);
+    border: 1px solid var(--cm-danger-border);
+    color: var(--cm-danger-text);
 }
 
 .validation-errors {
