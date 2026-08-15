@@ -337,6 +337,39 @@ Create a new migration instead.
 
 Migration source files must be committed to Git.
 
+# Production Migration Deployment
+
+Production schema deployment must be separated from application startup. CafeMenu.Api must not run `Database.Migrate`, `MigrateAsync` or `dotnet ef database update` from `Program.cs`, Docker entrypoints or normal request startup paths.
+
+The production deployment artifact for schema changes is an EF Core Migration Bundle built from the same Git commit/release as the application artifact:
+
+```powershell
+.\scripts\database\build-migration-bundle.ps1 -OutputDirectory .artifacts\migrations
+```
+
+The script uses the repository-local `dotnet-ef` tool, the `src/CafeMenu.Api` project as both project and startup project, and `CafeMenuDbContext` as the EF Core context. Generated bundle binaries are deployment artifacts and must not be committed to Git.
+
+Production connection strings must be provided at runtime through ASP.NET Core configuration, preferably environment variables or a deployment secret manager:
+
+```text
+ConnectionStrings__DefaultConnection=
+```
+
+Do not write production connection strings into scripts, source files, Dockerfiles, appsettings files or committed environment files. EF bundle also supports a `--connection` runtime option, but passing secrets as shell arguments can expose them through shell history or process listings; use environment/secret injection by default.
+
+EF migration bundles use `__ef_migrations_history` to track applied migrations. Re-running the same bundle is expected to be safe when no pending migrations remain.
+
+Before applying a production migration:
+
+* Select the application artifact/version.
+* Build the migration bundle from the exact same commit/version.
+* Confirm database backup and restore readiness.
+* Run the bundle as a controlled deployment or maintenance step before routing traffic to the new application version.
+* Stop the deployment if the bundle fails.
+* Keep application startup migration-free; readiness checks must only report dependency reachability.
+
+Do not implement automatic production rollback through down migrations. If a production migration fails, stop the deployment, inspect logs, restore from backup when required, or create a corrective forward migration. Destructive migrations such as dropped columns/tables, irreversible data transforms, large backfills or operations likely to take long locks require manual production review before bundle execution.
+
 ---
 
 # PostgreSQL Transient Retry

@@ -128,6 +128,26 @@ The retry strategy applies only to database failures that the Npgsql provider cl
 
 Retry is not a replacement for `/health/ready`; readiness still reports whether PostgreSQL is currently reachable. Explicit EF Core transactions must use the provider execution strategy pattern so retries and user-initiated transactions remain compatible.
 
+## Migration Bundle Configuration
+
+Production database migrations are applied with an EF Core Migration Bundle built from the matching application release:
+
+```powershell
+.\scripts\database\build-migration-bundle.ps1 -OutputDirectory .artifacts\migrations
+```
+
+The build script does not embed the production connection string. At bundle execution time, provide the database connection string through environment variables or a deployment secret manager:
+
+```text
+ConnectionStrings__DefaultConnection=
+```
+
+Base `appsettings.json` may travel with application artifacts because it must not contain secrets. Environment-specific appsettings files are only for non-secret overrides. A production deployment must inject the real connection string at runtime.
+
+EF bundle supports a runtime `--connection` option, but using command-line arguments for production secrets can expose them through shell history or process listings. Prefer environment/secret injection unless an operator deliberately chooses a safer platform-specific mechanism.
+
+The migration bundle uses EF Core migration history (`__ef_migrations_history`) to skip already applied migrations. Readiness probes continue to check reachability only; they do not apply schema changes.
+
 ## Rate Limiting
 
 CafeMenu.Api and CafeMenu.Web use the `RateLimiting` section for authentication and setup abuse protection.

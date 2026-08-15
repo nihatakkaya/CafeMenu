@@ -182,9 +182,25 @@ Production-like deployments must not use the memory provider. Use a managed or o
 
 EF Core migrations must be version-controlled.
 
-The deployment strategy must define where `dotnet ef database update` or an equivalent migration step runs.
+Production schema changes are applied through an EF Core Migration Bundle built from the same commit/version as the application release:
+
+```powershell
+.\scripts\database\build-migration-bundle.ps1 -OutputDirectory .artifacts\migrations
+```
+
+The bundle is a generated deployment artifact and must not be committed to Git. It should run as a controlled deployment or maintenance step before the new API/Web version receives traffic.
 
 Do not run ad-hoc SQL schema changes inside production containers.
+
+Do not add `dotnet ef database update`, migration bundle execution or other schema mutation commands to API/Web Docker image startup or ENTRYPOINT scripts. The application containers start only the application processes. Production provider selection will determine where the separate migration step runs.
+
+The migration step must receive the production database connection string through environment variables or a deployment secret manager, using the normal ASP.NET Core configuration key:
+
+```text
+ConnectionStrings__DefaultConnection=
+```
+
+If a migration bundle fails, stop the deployment and investigate. Do not make automatic down-migration rollback part of normal container startup.
 
 ---
 

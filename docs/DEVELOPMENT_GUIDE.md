@@ -112,6 +112,16 @@ Create a new migration instead.
 
 Keep migrations in the project's configured `Migrations/` directory.
 
+Production migration deployment is separate from local development. Do not add startup migration execution to the API or Docker entrypoints. Build a production migration bundle from the same commit as the application release:
+
+```powershell
+.\scripts\database\build-migration-bundle.ps1 -OutputDirectory .artifacts\migrations
+```
+
+The bundle build script restores the repository-local `dotnet-ef` tool, checks for pending EF model changes, and writes the generated binary to an ignored artifact directory. It must not be committed to Git.
+
+Production bundle execution must receive `ConnectionStrings__DefaultConnection` from environment variables or a deployment secret manager. Do not store production connection strings in source control or pass them as the default documented shell argument.
+
 ---
 
 # Step 4 - Create Repository
