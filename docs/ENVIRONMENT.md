@@ -15,6 +15,7 @@ Set the active environment with:
 
 ```text
 ASPNETCORE_ENVIRONMENT=
+ASPNETCORE_HTTP_PORTS=
 ```
 
 ---
@@ -48,6 +49,7 @@ Examples
 
 ```text
 ASPNETCORE_ENVIRONMENT=Development
+ASPNETCORE_HTTP_PORTS=8080
 
 ConnectionStrings__DefaultConnection=
 
@@ -97,6 +99,16 @@ In `Development`, `DataProtection__KeyRingPath` may be empty so ASP.NET Core can
 Outside `Development`, CafeMenu.Web fails fast if `DataProtection__KeyRingPath` is empty, whitespace, relative or malformed. Configure it to an absolute path on persistent/shared storage, such as a mounted volume managed by the deployment platform.
 
 The key ring is sensitive operational data. Do not store it in the repository or expose it broadly. If multiple Web instances serve the same deployment, they must share the same key ring path and application name. When a hosting provider is selected, configure provider-specific at-rest protection for the key ring separately.
+
+When CafeMenu.Web runs in the production container image, it runs as the Microsoft .NET image built-in non-root `APP_UID` user. Any mounted `DataProtection__KeyRingPath`, such as `/var/cafemenu/data-protection`, must be writable by that non-root user.
+
+## Container Runtime Paths
+
+CafeMenu.Api and CafeMenu.Web container images listen on internal port `8080` through `ASPNETCORE_HTTP_PORTS=8080`.
+
+CafeMenu.Api local media storage uses `/var/cafemenu/media` when `ImageStorage__Provider=Local`. Production deployments that use local media storage must mount persistent storage at that path and ensure the non-root container user can write to it.
+
+Do not bake production secrets, media files or Data Protection keys into Docker images.
 
 ## PostgreSQL Transient Retry
 

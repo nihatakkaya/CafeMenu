@@ -149,6 +149,7 @@ Examples
 
 ```text
 ASPNETCORE_ENVIRONMENT=Production
+ASPNETCORE_HTTP_PORTS=8080
 ConnectionStrings__DefaultConnection=...
 Database__Retry__Enabled=true
 Database__Retry__MaxRetryCount=3
@@ -157,6 +158,14 @@ Jwt__Secret=...
 ```
 
 Do not bake secrets into the Docker image.
+
+CafeMenu.Api and CafeMenu.Web images listen on internal container port `8080`. Host port mappings are deployment-specific and must be configured outside the image, such as through Docker Compose or the hosting platform.
+
+Both runtime images use the Microsoft .NET image built-in non-root `APP_UID` user. Deployment volumes mounted for writable application data must allow this non-root user to read and write the mount path.
+
+CafeMenu.Api uses `/var/cafemenu/media` as the documented local media mount point when `ImageStorage__Provider=Local`. The development Compose file mounts the `media_data` named volume there.
+
+CafeMenu.Web production deployments must configure `DataProtection__KeyRingPath` to a persistent/shared mounted path, for example `/var/cafemenu/data-protection`. The image prepares this path for the non-root runtime user, but production ownership and permissions remain a deployment responsibility when external volumes are mounted.
 
 The Web container uses `AdminSession__Provider`. Local development defaults to `Memory`. To exercise the distributed session store with Docker Compose, set:
 
@@ -213,6 +222,8 @@ Use `/health/ready` for readiness checks before routing traffic:
 * Web readiness does not require Redis when the development-only memory session provider is active.
 
 Healthy probes return HTTP `200`. Unhealthy readiness probes return HTTP `503` with a minimal status-only JSON response.
+
+The application images intentionally do not install curl, wget or extra shell tooling only for image-level `HEALTHCHECK` instructions. Use orchestrator, reverse-proxy or load-balancer probes against `/health/live` and `/health/ready`. The PostgreSQL and Redis development Compose services keep their own native healthchecks.
 
 ---
 

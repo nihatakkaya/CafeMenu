@@ -39,7 +39,7 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-cafemenu};Username=${POSTGRES_USER:-cafemenu_user};Password=${POSTGRES_PASSWORD:-change_me_for_local_dev}
       Jwt__Issuer: ${JWT_ISSUER:-CafeMenu.Development}
       Jwt__Audience: ${JWT_AUDIENCE:-CafeMenu.Api}
@@ -65,7 +65,7 @@ services:
         condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_HTTP_PORTS: 8080
       PublicApi__BaseUrl: ${PUBLIC_API_BASE_URL:-http://api:8080}
       AdminApi__BaseUrl: ${ADMIN_API_BASE_URL:-http://api:8080}
       AdminSession__Provider: ${ADMIN_SESSION_PROVIDER:-Memory}
