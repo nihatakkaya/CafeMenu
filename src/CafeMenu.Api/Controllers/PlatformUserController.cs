@@ -3,8 +3,10 @@ using CafeMenu.Api.DTOs.Requests;
 using CafeMenu.Api.DTOs.Responses;
 using CafeMenu.Api.Security;
 using CafeMenu.Api.Services;
+using CafeMenu.Shared.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CafeMenu.Api.Controllers;
 
@@ -21,6 +23,7 @@ public sealed class PlatformUserController : ControllerBase
 
     [Authorize(Policy = ApplicationPolicies.PlatformAdministration)]
     [HttpPost("CreateUserSetup")]
+    [EnableRateLimiting(ApplicationRateLimitPolicyNames.PlatformUserSetup)]
     [ProducesResponseType(typeof(ApiResponse<UserSetupResponseDto>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -50,6 +53,7 @@ public sealed class PlatformUserController : ControllerBase
 
     [AllowAnonymous]
     [HttpPost("CompleteUserSetup")]
+    [EnableRateLimiting(ApplicationRateLimitPolicyNames.AccountSetup)]
     [ProducesResponseType(typeof(ApiResponse<PlatformUserResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -63,6 +67,7 @@ public sealed class PlatformUserController : ControllerBase
 
     [Authorize(Policy = ApplicationPolicies.PlatformAdministration)]
     [HttpPost("ReissueUserSetup/{userId:long}")]
+    [EnableRateLimiting(ApplicationRateLimitPolicyNames.PlatformUserSetup)]
     [ProducesResponseType(typeof(ApiResponse<UserSetupResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status403Forbidden)]

@@ -11,6 +11,7 @@ using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.Configuration;
 using CafeMenu.Web.PublicMenu;
+using CafeMenu.Shared.RateLimiting;
 using CafeMenu.Shared.ReverseProxy;
 using CafeMenu.Shared.SecurityHeaders;
 using Microsoft.Extensions.Options;
@@ -23,6 +24,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddApplicationDataProtection(builder.Configuration);
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
+builder.Services.AddApplicationRateLimiting(builder.Configuration);
 builder.Services.AddApplicationSecurityHeaders();
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
@@ -71,6 +73,8 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseRateLimiter();
+app.UseApplicationAccountSetupPostRateLimiting();
 app.UseAdminRouteAuthorizationRedirect();
 app.UseAuthorization();
 app.UseAntiforgery();

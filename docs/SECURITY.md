@@ -103,6 +103,32 @@ Full script/style CSP hardening is intentionally deferred. A future nonce/hash b
 
 ---
 
+## Rate Limiting / Brute-Force Protection
+
+CafeMenu uses ASP.NET Core built-in fixed-window rate limiting for authentication and account setup abuse protection.
+
+The following sensitive operations are rate limited:
+
+* API `POST /Authentication/Login`
+* Web `POST /account/login`
+* API `POST /Authentication/RefreshToken`
+* Web `POST /account/setup`
+* API `POST /PlatformUser/CompleteUserSetup`
+* API `POST /PlatformUser/CreateUserSetup`
+* API `POST /PlatformUser/ReissueUserSetup/{userId}`
+
+Logout, health checks, public menu reads, static assets, media reads and ordinary admin dashboard reads are not globally rate limited in V1.
+
+Anonymous policies are partitioned by `HttpContext.Connection.RemoteIpAddress`. Trusted reverse proxy forwarded headers are processed before rate limiting, so `RemoteIpAddress` may reflect a trusted `X-Forwarded-For` client address only when the reverse proxy configuration trusts the proxy. Raw forwarded header values must not be used directly as rate-limit partition keys.
+
+Platform user setup operations use the authenticated user identifier when available and fall back to client IP for unauthenticated requests.
+
+Rejected requests return `429 Too Many Requests` with a generic response that does not reveal whether an email, password, refresh token or setup token was valid. `Retry-After` is included when ASP.NET Core exposes reliable retry metadata.
+
+The application-level limiter is process-local and instance-local. In horizontal scale or high-risk production deployments, edge, reverse-proxy or distributed rate limiting should be evaluated separately. The process-local limiter still provides useful per-instance protection but is not a global cluster-wide limit.
+
+---
+
 ## CORS
 
 Only trusted origins should be allowed.

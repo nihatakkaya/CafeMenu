@@ -4,8 +4,10 @@ using CafeMenu.Api.Common;
 using CafeMenu.Api.DTOs.Requests;
 using CafeMenu.Api.DTOs.Responses;
 using CafeMenu.Api.Services;
+using CafeMenu.Shared.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace CafeMenu.Api.Controllers;
 
@@ -21,6 +23,7 @@ public sealed class AuthenticationController : ControllerBase
     }
 
     [HttpPost("Login")]
+    [EnableRateLimiting(ApplicationRateLimitPolicyNames.Login)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -33,6 +36,7 @@ public sealed class AuthenticationController : ControllerBase
     }
 
     [HttpPost("RefreshToken")]
+    [EnableRateLimiting(ApplicationRateLimitPolicyNames.Refresh)]
     [ProducesResponseType(typeof(ApiResponse<AuthResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]

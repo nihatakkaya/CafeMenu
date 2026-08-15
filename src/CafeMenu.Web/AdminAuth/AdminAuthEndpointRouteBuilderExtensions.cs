@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Net;
+using CafeMenu.Shared.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,8 @@ public static class AdminAuthEndpointRouteBuilderExtensions
     public static IEndpointRouteBuilder MapAdminAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
         endpoints.MapGet("/account/login", LoginPage);
-        endpoints.MapPost("/account/login", LoginAsync);
+        endpoints.MapPost("/account/login", LoginAsync)
+            .RequireRateLimiting(ApplicationRateLimitPolicyNames.Login);
 
         endpoints.MapPost("/account/logout", LogoutAsync)
             .RequireAuthorization();

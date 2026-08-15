@@ -1,6 +1,7 @@
 using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Configuration;
 using CafeMenu.Api.Storage;
+using CafeMenu.Shared.RateLimiting;
 using CafeMenu.Shared.ReverseProxy;
 using CafeMenu.Shared.SecurityHeaders;
 
@@ -11,6 +12,7 @@ builder.Services.AddApplicationOpenApi();
 builder.Services.AddApplicationDatabase(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
+builder.Services.AddApplicationRateLimiting(builder.Configuration);
 builder.Services.AddApplicationSecurityHeaders();
 
 var app = builder.Build();
@@ -42,6 +44,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapImageStorageEndpoints();
