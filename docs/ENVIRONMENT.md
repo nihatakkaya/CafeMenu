@@ -70,6 +70,25 @@ AdminSession__MinimumCacheTtlSeconds=1
 
 `AdminSession__Provider=Memory` is only valid for `Development`. Staging and Production must use `AdminSession__Provider=Redis` with `AdminSession__RedisConnectionString` supplied from environment variables or a secret manager. Do not commit Redis passwords or production connection strings.
 
+## Reverse Proxy / Forwarded Headers
+
+CafeMenu.Api and CafeMenu.Web can be configured to trust forwarded headers from a controlled reverse proxy.
+
+Default local configuration keeps this disabled:
+
+```text
+ReverseProxy__Enabled=false
+ReverseProxy__ForwardLimit=1
+ReverseProxy__KnownProxies__0=
+ReverseProxy__KnownIPNetworks__0=
+```
+
+When `ReverseProxy__Enabled=true`, startup validation requires `ReverseProxy__ForwardLimit` to be at least `1` and at least one trusted proxy entry in `ReverseProxy__KnownProxies` or `ReverseProxy__KnownIPNetworks`.
+
+Use `ReverseProxy__KnownProxies` for individual proxy IP addresses and `ReverseProxy__KnownIPNetworks` for trusted CIDR ranges, for example `10.0.0.0/24` or `2001:db8::/64`.
+
+Only controlled proxy IP addresses or CIDR ranges may be trusted. Do not clear trusted proxy lists to accept all forwarded headers, and do not enable platform-wide trust-all forwarding switches such as `ASPNETCORE_FORWARDEDHEADERS_ENABLED`.
+
 If the Docker configuration uses separate database variables, they may be defined as:
 
 ```text

@@ -10,6 +10,7 @@ using CafeMenu.Web.AdminQr;
 using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.PublicMenu;
+using CafeMenu.Shared.ReverseProxy;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddApplicationReverseProxy(builder.Configuration);
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
@@ -52,7 +54,12 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+}
+
+app.UseConfiguredForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
     app.UseHsts();
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);

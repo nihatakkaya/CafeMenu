@@ -1,6 +1,7 @@
 using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Configuration;
 using CafeMenu.Api.Storage;
+using CafeMenu.Shared.ReverseProxy;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +9,7 @@ builder.Services.AddApplicationApi();
 builder.Services.AddApplicationOpenApi();
 builder.Services.AddApplicationDatabase(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
+builder.Services.AddApplicationReverseProxy(builder.Configuration);
 
 var app = builder.Build();
 
@@ -19,6 +21,12 @@ if (PlatformAdminBootstrapCommand.IsRequested(args))
 }
 
 app.UseExceptionHandler();
+app.UseConfiguredForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
 
 if (app.Environment.IsDevelopment())
 {

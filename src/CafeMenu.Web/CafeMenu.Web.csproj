@@ -12,4 +12,8 @@
     <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\CafeMenu.Shared\ReverseProxy\*.cs" Link="Configuration\ReverseProxy\%(Filename)%(Extension)" />
+  </ItemGroup>
+
 </Project>
