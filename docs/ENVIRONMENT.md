@@ -68,6 +68,8 @@ ImageStorage__LocalRoot=/var/cafemenu/media
 ImageStorage__PublicBaseUrl=https://example.com/media
 ImageStorage__MaxFileSizeBytes=5242880
 
+HttpClients__DefaultTimeoutSeconds=15
+
 AdminSession__Provider=Memory
 AdminSession__KeyPrefix=cafemenu:admin-session:
 AdminSession__RedisConnectionString=
@@ -147,6 +149,20 @@ Base `appsettings.json` may travel with application artifacts because it must no
 EF bundle supports a runtime `--connection` option, but using command-line arguments for production secrets can expose them through shell history or process listings. Prefer environment/secret injection unless an operator deliberately chooses a safer platform-specific mechanism.
 
 The migration bundle uses EF Core migration history (`__ef_migrations_history`) to skip already applied migrations. Readiness probes continue to check reachability only; they do not apply schema changes.
+
+## Outbound HTTP Clients
+
+CafeMenu.Web calls CafeMenu.Api through ASP.NET Core `IHttpClientFactory` clients. All registered Web -> API clients use:
+
+```text
+HttpClients__DefaultTimeoutSeconds=15
+```
+
+The value must be between `1` and `120` seconds and is validated at startup. CafeMenu V1 uses `HttpClient.Timeout` as the single timeout ownership layer for outbound HTTP calls; no separate resilience timeout policy is configured.
+
+Admin/auth/setup/category/product/branding/image upload/platform mutation calls are not automatically retried because they can create, update, revoke, rotate or delete state. Public menu reads are also currently not retried; callers receive the existing safe failure/not-found UI states. Request cancellation tokens are passed through to outbound HTTP calls so browser/request cancellation is not replaced with unrelated background work.
+
+This timeout configuration is independent from PostgreSQL retry, Redis behavior and health/readiness probes. Do not log backend access tokens, refresh tokens, request bodies or full response bodies when handling outbound HTTP failures.
 
 ## Rate Limiting
 

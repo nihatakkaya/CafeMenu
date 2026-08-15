@@ -47,6 +47,10 @@ public sealed class PublicMenuApiClient : IPublicMenuApiClient
         {
             return PublicMenuRequestResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return PublicMenuRequestResult.Failure();
+        }
         catch (JsonException)
         {
             return PublicMenuRequestResult.Failure();
@@ -85,6 +89,10 @@ public sealed class PublicMenuApiClient : IPublicMenuApiClient
                 : PublicProductDetailRequestResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return PublicProductDetailRequestResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return PublicProductDetailRequestResult.Failure();
         }

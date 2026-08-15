@@ -38,6 +38,10 @@ public sealed class AdminCafeApiClient : IAdminCafeApiClient
         {
             return AdminCafeListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminCafeListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminCafeListResult.Failure();
@@ -66,6 +70,10 @@ public sealed class AdminCafeApiClient : IAdminCafeApiClient
                 : AdminCafeDashboardStatsResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminCafeDashboardStatsResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminCafeDashboardStatsResult.Failure();
         }

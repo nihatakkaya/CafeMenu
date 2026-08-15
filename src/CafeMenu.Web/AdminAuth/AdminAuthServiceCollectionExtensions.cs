@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
+using CafeMenu.Web.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace CafeMenu.Web.AdminAuth;
@@ -59,13 +60,14 @@ public static class AdminAuthServiceCollectionExtensions
         {
             var options = serviceProvider.GetRequiredService<IOptions<AdminApiOptions>>().Value;
             httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-        });
+        }).ConfigureOutboundHttpTimeout();
 
         services.AddHttpClient(AdminAuthenticationConstants.AdminApiClientName, (serviceProvider, httpClient) =>
             {
                 var options = serviceProvider.GetRequiredService<IOptions<AdminApiOptions>>().Value;
                 httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
             })
+            .ConfigureOutboundHttpTimeout()
             .AddHttpMessageHandler<AdminApiAuthenticationHandler>();
 
         return services;

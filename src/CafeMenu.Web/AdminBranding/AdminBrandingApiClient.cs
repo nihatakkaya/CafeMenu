@@ -43,6 +43,10 @@ public sealed class AdminBrandingApiClient : IAdminBrandingApiClient
         {
             return AdminBrandingRequestResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminBrandingRequestResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminBrandingRequestResult.Failure();
@@ -81,6 +85,10 @@ public sealed class AdminBrandingApiClient : IAdminBrandingApiClient
                 : AdminBrandingRequestResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminBrandingRequestResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminBrandingRequestResult.Failure();
         }

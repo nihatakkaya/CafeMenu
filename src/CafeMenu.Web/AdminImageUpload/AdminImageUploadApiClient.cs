@@ -89,6 +89,10 @@ public sealed class AdminImageUploadApiClient : IAdminImageUploadApiClient
         {
             return AdminImageUploadStatus.Failure;
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminImageUploadStatus.Failure;
+        }
     }
 
     private async Task<AdminImageUploadStatus> PostEmptyAsync(
@@ -101,6 +105,10 @@ public sealed class AdminImageUploadApiClient : IAdminImageUploadApiClient
             return ToStatus(response.StatusCode);
         }
         catch (HttpRequestException)
+        {
+            return AdminImageUploadStatus.Failure;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminImageUploadStatus.Failure;
         }

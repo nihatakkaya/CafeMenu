@@ -23,6 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddApplicationDataProtection(builder.Configuration);
+builder.Services.AddOutboundHttpClientConfiguration(builder.Configuration);
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
 builder.Services.AddApplicationRateLimiting(builder.Configuration);
@@ -39,7 +40,11 @@ builder.Services.AddScoped<IAdminQrCodeService, AdminQrCodeService>();
 builder.Services.AddScoped<IAdminQrUrlBuilder, AdminQrUrlBuilder>();
 builder.Services.AddScoped<IAdminImageUploadApiClient, AdminImageUploadApiClient>();
 builder.Services.AddScoped<IAccountSetupApiClient, AccountSetupApiClient>();
-builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName);
+builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName, (serviceProvider, httpClient) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<AdminApiOptions>>().Value;
+    httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+}).ConfigureOutboundHttpTimeout();
 builder.Services.AddOptions<PublicMenuQrOptions>()
     .Bind(builder.Configuration.GetSection("PublicMenu"))
     .ValidateDataAnnotations()
@@ -54,7 +59,7 @@ builder.Services.AddHttpClient<IPublicMenuApiClient, PublicMenuApiClient>((servi
 {
     var options = serviceProvider.GetRequiredService<IOptions<PublicMenuApiOptions>>().Value;
     httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
-});
+}).ConfigureOutboundHttpTimeout();
 
 var app = builder.Build();
 

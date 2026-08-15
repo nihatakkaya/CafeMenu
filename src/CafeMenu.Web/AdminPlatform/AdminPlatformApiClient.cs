@@ -38,6 +38,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         {
             return AdminPlatformCafeListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminPlatformCafeListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminPlatformCafeListResult.Failure();
@@ -63,6 +67,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
                 : AdminPlatformDashboardStatsResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminPlatformDashboardStatsResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminPlatformDashboardStatsResult.Failure();
         }
@@ -125,6 +133,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         {
             return AdminPlatformMemberListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminPlatformMemberListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminPlatformMemberListResult.Failure();
@@ -178,6 +190,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         {
             return AdminPlatformUserSearchResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminPlatformUserSearchResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminPlatformUserSearchResult.Failure();
@@ -212,6 +228,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
             return await ReadMembershipMutationResultAsync(response, cancellationToken);
         }
         catch (HttpRequestException)
+        {
+            return AdminPlatformMembershipMutationResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminPlatformMembershipMutationResult.Failure();
         }
@@ -253,6 +273,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         {
             return AdminPlatformCafeMutationResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminPlatformCafeMutationResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminPlatformCafeMutationResult.Failure();
@@ -291,6 +315,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
         {
             return AdminPlatformUserSetupResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminPlatformUserSetupResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminPlatformUserSetupResult.Failure();
@@ -313,6 +341,10 @@ public sealed class AdminPlatformApiClient : IAdminPlatformApiClient
             return await ReadMembershipMutationResultAsync(response, cancellationToken);
         }
         catch (HttpRequestException)
+        {
+            return AdminPlatformMembershipMutationResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminPlatformMembershipMutationResult.Failure();
         }

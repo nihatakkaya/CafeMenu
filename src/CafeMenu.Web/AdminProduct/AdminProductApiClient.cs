@@ -30,6 +30,10 @@ public sealed class AdminProductApiClient : IAdminProductApiClient
         {
             return AdminProductListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminProductListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminProductListResult.Failure();
@@ -72,6 +76,10 @@ public sealed class AdminProductApiClient : IAdminProductApiClient
                 : AdminProductDeleteResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminProductDeleteResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminProductDeleteResult.Failure();
         }
@@ -131,6 +139,10 @@ public sealed class AdminProductApiClient : IAdminProductApiClient
         {
             return AdminProductListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminProductListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminProductListResult.Failure();
@@ -171,6 +183,10 @@ public sealed class AdminProductApiClient : IAdminProductApiClient
                 : AdminProductMutationResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminProductMutationResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminProductMutationResult.Failure();
         }

@@ -30,6 +30,10 @@ public sealed class AdminCategoryApiClient : IAdminCategoryApiClient
         {
             return AdminCategoryListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminCategoryListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminCategoryListResult.Failure();
@@ -72,6 +76,10 @@ public sealed class AdminCategoryApiClient : IAdminCategoryApiClient
                 : AdminCategoryDeleteResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminCategoryDeleteResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminCategoryDeleteResult.Failure();
         }
@@ -119,6 +127,10 @@ public sealed class AdminCategoryApiClient : IAdminCategoryApiClient
         {
             return AdminCategoryListResult.Failure();
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AdminCategoryListResult.Failure();
+        }
         catch (JsonException)
         {
             return AdminCategoryListResult.Failure();
@@ -159,6 +171,10 @@ public sealed class AdminCategoryApiClient : IAdminCategoryApiClient
                 : AdminCategoryMutationResult.Failure();
         }
         catch (HttpRequestException)
+        {
+            return AdminCategoryMutationResult.Failure();
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return AdminCategoryMutationResult.Failure();
         }

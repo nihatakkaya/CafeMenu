@@ -46,6 +46,10 @@ public sealed class AccountSetupApiClient : IAccountSetupApiClient
         {
             return AccountSetupResult.Failure(AccountSetupStatus.Failure);
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return AccountSetupResult.Failure(AccountSetupStatus.Failure);
+        }
         catch (JsonException)
         {
             return AccountSetupResult.Failure(AccountSetupStatus.Failure);

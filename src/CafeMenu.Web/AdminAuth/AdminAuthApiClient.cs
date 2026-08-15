@@ -52,6 +52,10 @@ public sealed class AdminAuthApiClient : IAdminAuthApiClient
         {
             return false;
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
         catch (JsonException)
         {
             return false;
@@ -85,6 +89,10 @@ public sealed class AdminAuthApiClient : IAdminAuthApiClient
                 : null;
         }
         catch (HttpRequestException)
+        {
+            return null;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             return null;
         }
