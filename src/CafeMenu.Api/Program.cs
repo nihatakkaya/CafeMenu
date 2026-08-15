@@ -2,6 +2,7 @@ using CafeMenu.Api.Bootstrap;
 using CafeMenu.Api.Configuration;
 using CafeMenu.Api.Storage;
 using CafeMenu.Shared.ReverseProxy;
+using CafeMenu.Shared.SecurityHeaders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddApplicationOpenApi();
 builder.Services.AddApplicationDatabase(builder.Configuration);
 builder.Services.AddApplicationAuthentication(builder.Configuration);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
+builder.Services.AddApplicationSecurityHeaders();
 
 var app = builder.Build();
 
@@ -27,6 +29,8 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
+
+app.UseApplicationSecurityHeaders();
 
 if (app.Environment.IsDevelopment())
 {

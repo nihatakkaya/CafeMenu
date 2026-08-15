@@ -12,6 +12,7 @@ using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.Configuration;
 using CafeMenu.Web.PublicMenu;
 using CafeMenu.Shared.ReverseProxy;
+using CafeMenu.Shared.SecurityHeaders;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,6 +23,7 @@ builder.Services.AddRazorComponents()
 builder.Services.AddApplicationDataProtection(builder.Configuration);
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
+builder.Services.AddApplicationSecurityHeaders();
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
@@ -64,6 +66,7 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
+app.UseApplicationSecurityHeaders();
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 

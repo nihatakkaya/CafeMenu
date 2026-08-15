@@ -87,6 +87,20 @@ Production environments must always use HTTPS.
 
 Authentication tokens must not be transmitted over unencrypted HTTP in production.
 
+## HTTP Security Headers
+
+CafeMenu.Api and CafeMenu.Web apply a small provider-independent baseline security header policy:
+
+* `X-Content-Type-Options: nosniff` reduces browser MIME sniffing.
+* `Referrer-Policy: strict-origin-when-cross-origin` limits cross-origin referrer leakage while preserving useful same-origin behavior.
+* `X-Frame-Options: SAMEORIGIN` reduces clickjacking risk for same-site UI/admin pages.
+* `Permissions-Policy: camera=(), microphone=(), geolocation=()` disables browser capabilities not used by CafeMenu V1.
+* `Content-Security-Policy: frame-ancestors 'self'` provides a minimal CSP clickjacking control without adding script/style directives that could break Blazor rendering.
+
+HSTS is managed separately through ASP.NET Core HSTS middleware and should not be duplicated through manual headers.
+
+Full script/style CSP hardening is intentionally deferred. A future nonce/hash based CSP must be designed and tested against Blazor static SSR, interactive components, static assets and admin/public pages before enabling it.
+
 ---
 
 ## CORS
