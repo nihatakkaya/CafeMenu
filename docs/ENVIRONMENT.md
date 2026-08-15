@@ -118,6 +118,25 @@ Rejected requests return `429 Too Many Requests`. Anonymous rate limits use `Htt
 
 The built-in ASP.NET Core limiter is process-local. If CafeMenu is horizontally scaled, configure edge, reverse-proxy or distributed rate limiting separately when global limits are required.
 
+## Health Probes
+
+CafeMenu.Api and CafeMenu.Web expose anonymous health probe endpoints:
+
+```text
+GET /health/live
+GET /health/ready
+```
+
+`/health/live` reports whether the application process and HTTP pipeline are alive. It does not check PostgreSQL or Redis, so transient dependency outages do not cause orchestrators to restart otherwise running containers.
+
+`/health/ready` reports whether the application is ready to receive traffic:
+
+* CafeMenu.Api readiness checks PostgreSQL connectivity through the configured EF Core `CafeMenuDbContext`.
+* CafeMenu.Web readiness checks Redis only when `AdminSession__Provider=Redis`.
+* CafeMenu.Web with `AdminSession__Provider=Memory` remains ready in `Development` without requiring Redis.
+
+Healthy probes return HTTP `200`. Readiness dependency failures return HTTP `503`. Health responses intentionally expose only a small status contract and must not include connection strings, hostnames, credentials or exception details.
+
 ## Reverse Proxy / Forwarded Headers
 
 CafeMenu.Api and CafeMenu.Web can be configured to trust forwarded headers from a controlled reverse proxy.

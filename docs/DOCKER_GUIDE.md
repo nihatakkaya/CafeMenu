@@ -176,6 +176,27 @@ Do not run ad-hoc SQL schema changes inside production containers.
 
 ---
 
+## Health Probes
+
+CafeMenu.Api and CafeMenu.Web expose provider-independent probe endpoints for deployment platforms:
+
+```text
+GET /health/live
+GET /health/ready
+```
+
+Use `/health/live` for liveness checks. It verifies that the process and HTTP pipeline are responding and does not fail when PostgreSQL or Redis is temporarily unavailable.
+
+Use `/health/ready` for readiness checks before routing traffic:
+
+* API readiness checks PostgreSQL connectivity.
+* Web readiness checks Redis when `AdminSession__Provider=Redis`.
+* Web readiness does not require Redis when the development-only memory session provider is active.
+
+Healthy probes return HTTP `200`. Unhealthy readiness probes return HTTP `503` with a minimal status-only JSON response.
+
+---
+
 ## Docker Philosophy
 
 Everything required to run the local project infrastructure should start with a single command whenever practical:

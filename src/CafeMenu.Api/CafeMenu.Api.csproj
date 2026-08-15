@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\CafeMenu.Shared\HealthChecks\*.cs" Link="Configuration\HealthChecks\%(Filename)%(Extension)" />
     <Compile Include="..\CafeMenu.Shared\ReverseProxy\*.cs" Link="Configuration\ReverseProxy\%(Filename)%(Extension)" />
     <Compile Include="..\CafeMenu.Shared\RateLimiting\*.cs" Link="Configuration\RateLimiting\%(Filename)%(Extension)" />
     <Compile Include="..\CafeMenu.Shared\SecurityHeaders\*.cs" Link="Configuration\SecurityHeaders\%(Filename)%(Extension)" />

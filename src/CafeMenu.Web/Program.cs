@@ -11,6 +11,7 @@ using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.AdminImageUpload;
 using CafeMenu.Web.Configuration;
 using CafeMenu.Web.PublicMenu;
+using CafeMenu.Shared.HealthChecks;
 using CafeMenu.Shared.RateLimiting;
 using CafeMenu.Shared.ReverseProxy;
 using CafeMenu.Shared.SecurityHeaders;
@@ -26,6 +27,7 @@ builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, bui
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
 builder.Services.AddApplicationRateLimiting(builder.Configuration);
 builder.Services.AddApplicationSecurityHeaders();
+builder.Services.AddApplicationHealthChecks();
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
 builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
 builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
@@ -83,6 +85,7 @@ app.MapStaticAssets();
 app.MapAdminAuthEndpoints();
 app.MapAdminImageUploadEndpoints();
 app.MapAdminQrEndpoints();
+app.MapApplicationHealthEndpoints();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
