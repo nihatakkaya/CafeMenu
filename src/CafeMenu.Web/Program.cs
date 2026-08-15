@@ -9,6 +9,7 @@ using CafeMenu.Web.AdminProduct;
 using CafeMenu.Web.AdminQr;
 using CafeMenu.Web.AdminAuth;
 using CafeMenu.Web.AdminImageUpload;
+using CafeMenu.Web.Configuration;
 using CafeMenu.Web.PublicMenu;
 using CafeMenu.Shared.ReverseProxy;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddApplicationDataProtection(builder.Configuration);
 builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddApplicationReverseProxy(builder.Configuration);
 builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();

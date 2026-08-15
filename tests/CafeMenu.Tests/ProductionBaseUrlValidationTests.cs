@@ -162,6 +162,10 @@ public sealed class ProductionBaseUrlValidationTests
     private sealed class ProductionBaseUrlWebApplicationFactory : WebApplicationFactory<WebProgram>
     {
         private readonly IReadOnlyDictionary<string, string?> _configurationOverrides;
+        private readonly string _dataProtectionKeyPath = Path.Combine(
+            Path.GetTempPath(),
+            "cafemenu-production-base-url-data-protection",
+            Guid.NewGuid().ToString("N"));
 
         public ProductionBaseUrlWebApplicationFactory(
             IReadOnlyDictionary<string, string?>? configurationOverrides = null)
@@ -188,7 +192,9 @@ public sealed class ProductionBaseUrlValidationTests
                 ["PublicMenu:BaseUrl"] = "https://menu.example.com",
                 ["AdminSession:Provider"] = AdminSessionProvider.Redis,
                 ["AdminSession:RedisConnectionString"] = "localhost:6379",
-                ["AdminSession:MinimumCacheTtlSeconds"] = "1"
+                ["AdminSession:MinimumCacheTtlSeconds"] = "1",
+                ["DataProtection:ApplicationName"] = "CafeMenu.Web.Tests",
+                ["DataProtection:KeyRingPath"] = _dataProtectionKeyPath
             };
 
             foreach (var item in _configurationOverrides)

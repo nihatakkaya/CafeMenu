@@ -66,9 +66,24 @@ AdminSession__Provider=Memory
 AdminSession__KeyPrefix=cafemenu:admin-session:
 AdminSession__RedisConnectionString=
 AdminSession__MinimumCacheTtlSeconds=1
+
+DataProtection__ApplicationName=CafeMenu.Web
+DataProtection__KeyRingPath=
 ```
 
 `AdminSession__Provider=Memory` is only valid for `Development`. Staging and Production must use `AdminSession__Provider=Redis` with `AdminSession__RedisConnectionString` supplied from environment variables or a secret manager. Do not commit Redis passwords or production connection strings.
+
+## Web Data Protection
+
+CafeMenu.Web uses `DataProtection__ApplicationName` and `DataProtection__KeyRingPath` for ASP.NET Core Data Protection key management.
+
+`DataProtection__ApplicationName` defaults to `CafeMenu.Web` and must be identical across Web instances in the same deployment.
+
+In `Development`, `DataProtection__KeyRingPath` may be empty so ASP.NET Core can use its default local development key storage.
+
+Outside `Development`, CafeMenu.Web fails fast if `DataProtection__KeyRingPath` is empty, whitespace, relative or malformed. Configure it to an absolute path on persistent/shared storage, such as a mounted volume managed by the deployment platform.
+
+The key ring is sensitive operational data. Do not store it in the repository or expose it broadly. If multiple Web instances serve the same deployment, they must share the same key ring path and application name. When a hosting provider is selected, configure provider-specific at-rest protection for the key ring separately.
 
 ## Reverse Proxy / Forwarded Headers
 

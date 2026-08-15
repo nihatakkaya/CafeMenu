@@ -708,6 +708,10 @@ public sealed class AdminAuthenticationInfrastructureTests
         private readonly IAdminAuthApiClient _authApiClient;
         private readonly string? _environmentName;
         private readonly IReadOnlyDictionary<string, string?> _configurationOverrides;
+        private readonly string _dataProtectionKeyPath = Path.Combine(
+            Path.GetTempPath(),
+            "cafemenu-web-auth-test-data-protection",
+            Guid.NewGuid().ToString("N"));
 
         public AdminAuthWebApplicationFactory(
             IAdminAuthApiClient authApiClient,
@@ -755,7 +759,9 @@ public sealed class AdminAuthenticationInfrastructureTests
             {
                 ["AdminApi:BaseUrl"] = "https://api.example.test",
                 ["PublicApi:BaseUrl"] = "https://api.example.test",
-                ["PublicMenu:BaseUrl"] = "https://menu.example.test"
+                ["PublicMenu:BaseUrl"] = "https://menu.example.test",
+                ["DataProtection:ApplicationName"] = "CafeMenu.Web.Tests",
+                ["DataProtection:KeyRingPath"] = _dataProtectionKeyPath
             };
 
             foreach (var item in _configurationOverrides)

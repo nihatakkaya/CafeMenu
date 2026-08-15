@@ -69,6 +69,16 @@ Admin session cache entries expire no later than the stored refresh token expiry
 
 Production deployments must also use shared ASP.NET Core Data Protection key management across Web instances so the `CafeMenu.Admin` cookie can be validated after restarts and across instances.
 
+## Web Data Protection Key Ring
+
+CafeMenu.Web uses ASP.NET Core Data Protection to protect the `CafeMenu.Admin` authentication cookie.
+
+All production CafeMenu.Web instances for the same deployment must use the same `DataProtection:ApplicationName` and the same persistent/shared `DataProtection:KeyRingPath`. Without a shared key ring, admin cookies may become unreadable after container restarts, redeployments or when traffic moves between Web instances.
+
+`DataProtection:KeyRingPath` must point to persistent operational storage outside source control. Key ring files are sensitive operational material and should be readable only by the Web process identity and authorized operators. Backup and recovery plans must preserve the key ring alongside other deployment state.
+
+Do not commit key ring files or place production key material in the repository. When a deployment provider is selected, configure an appropriate provider-specific encryption-at-rest mechanism separately.
+
 ---
 
 ## HTTPS
