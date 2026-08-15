@@ -14,6 +14,7 @@ using Microsoft.Extensions.Options;
 
 namespace CafeMenu.Tests;
 
+[Collection(EnvironmentMutatingTestCollection.Name)]
 public sealed class ReverseProxyConfigurationTests
 {
     [Fact]

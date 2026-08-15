@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
@@ -940,6 +941,14 @@ public sealed class AdminPlatformOnboardingBlazorTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.ConfigureLogging(loggingBuilder => loggingBuilder.ClearProviders());
+            builder.ConfigureAppConfiguration((_, configurationBuilder) =>
+            {
+                configurationBuilder.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["ReverseProxy:Enabled"] = "false",
+                    ["ReverseProxy:ForwardLimit"] = "1"
+                });
+            });
             builder.ConfigureTestServices(services =>
             {
                 services.RemoveAll<IAdminAuthApiClient>();
