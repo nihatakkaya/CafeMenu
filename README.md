@@ -1,4 +1,4 @@
-#  CafeMenu
+# CafeMenu
 
 <p align="center">
   <strong>Multi-tenant QR menü yönetim platformu</strong><br>
@@ -14,6 +14,8 @@
   <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker Compose">
   <img src="https://img.shields.io/badge/xUnit-Tests-5E2B97" alt="xUnit">
 </p>
+
+> **Public showcase repository:** Bu repository CafeMenu projesinin ürün, mimari ve arayüz tanıtımı için hazırlanmıştır. Uygulamanın tam kaynak kodu, deployment scriptleri, internal geliştirme dokümantasyonu ve test kaynakları public olarak paylaşılmamaktadır.
 
 ---
 
@@ -32,11 +34,9 @@
 - [Güvenlik Yaklaşımı](#-güvenlik-yaklaşımı)
 - [Docker ve Production Yaklaşımı](#-docker-ve-production-yaklaşımı)
 - [Ekran Görüntüleri](#-ekran-görüntüleri)
-- [Proje Yapısı](#-proje-yapısı)
+- [Public Repository Yapısı](#-public-repository-yapısı)
 - [Testler](#-testler)
-- [Dokümantasyon](#-dokümantasyon)
 - [V1 Kapsamı](#-v1-kapsamı)
-- [Geliştirici](#-geliştirici)
 
 ---
 
@@ -157,7 +157,7 @@ Cafe seviyesindeki sahip rolüdür.
 - Yetkili olduğu cafeleri yönetir.
 - Menü ve cafe ayarlarında geniş yönetim yetkisine sahiptir.
 - Bir kullanıcı birden fazla cafeye bağlı olabilir.
-- Sahiplik doğrudan `CafeEntity` üzerinde tek bir kullanıcı alanıyla tutulmaz; membership modeli üzerinden temsil edilir.
+- Sahiplik doğrudan tek bir cafe kullanıcı alanına bağlı değildir; membership modeli üzerinden temsil edilir.
 
 ### `CAFE_MANAGER`
 
@@ -196,22 +196,21 @@ Temel membership ilişkisi:
 
 ```mermaid
 flowchart LR
-    USER[AppUserEntity] --> MEMBERSHIP[CafeMembershipEntity]
-    MEMBERSHIP --> CAFE[CafeEntity]
-    MEMBERSHIP --> ROLE[RoleEntity]
+    USER[User] --> MEMBERSHIP[Cafe Membership]
+    MEMBERSHIP --> CAFE[Cafe / Tenant]
+    MEMBERSHIP --> ROLE[Role]
 
-    CAFE --> THEME[CafeThemeEntity]
-    CAFE --> CATEGORY[CategoryEntity]
-    CATEGORY --> PRODUCT[ProductEntity]
-    CAFE --> PRODUCT
-    CAFE --> AUDIT[AuditLogEntity]
+    CAFE --> THEME[Branding / Theme]
+    CAFE --> CATEGORY[Categories]
+    CATEGORY --> PRODUCT[Products]
+    CAFE --> AUDIT[Audit Records]
 ```
 
 Bu modelin önemli sonucu:
 
 > **Bir kullanıcı = bir cafe** varsayımı yapılmaz.
 
-Bir kullanıcı birden fazla cafe için üyeliğe sahip olabilir. Cafe erişimi, client tarafından gönderilen `CafeId` değerine güvenilerek değil; authenticated user, aktif membership, rol/policy ve resource ownership kontrolleriyle server-side olarak doğrulanır.
+Bir kullanıcı birden fazla cafe için üyeliğe sahip olabilir. Cafe erişimi, client tarafından gönderilen cafe kimliğine güvenilerek değil; authenticated user, aktif membership, rol/policy ve resource ownership kontrolleriyle server-side olarak doğrulanır.
 
 ### Cross-Tenant Koruma
 
@@ -297,7 +296,7 @@ Service
     ↓
 Repository
     ↓
-DbContext / EF Core
+Entity Framework Core
     ↓
 PostgreSQL
 ```
@@ -305,11 +304,9 @@ PostgreSQL
 - **Controller:** HTTP request/response ve request DTO'ları.
 - **Service:** İş kuralları, business validation, authorization koordinasyonu ve transaction boundary.
 - **Repository:** Veri erişimi ve EF Core sorguları.
-- **DbContext / EF Core:** PostgreSQL persistence.
+- **EF Core:** PostgreSQL persistence.
 - **Mapperly:** Entity ↔ DTO mapping.
 - **Global Exception Handling:** Standart hata cevaplarının merkezi yönetimi.
-
-Controller katmanı doğrudan repository veya `DbContext` kullanmaz.
 
 ---
 
@@ -331,58 +328,48 @@ sequenceDiagram
     Controller->>Service: Request DTO
     Service->>Service: Business + Authorization Validation
     Service->>Repository: Tenant-scoped operation
-    Repository->>EF: LINQ / EF Core
+    Repository->>EF: Data access
     EF->>DB: SQL
     DB-->>EF: Result
     EF-->>Repository: Entity data
     Repository-->>Service: Result
-    Service->>Service: Mapperly / DTO mapping
     Service-->>Controller: Response DTO
-    Controller-->>Client: ApiResponse<T>
-```
-
-API cevaplarında ortak response modeli kullanılır:
-
-```text
-ApiResponse<T>
+    Controller-->>Client: Standard API Response
 ```
 
 ---
 
 ## 🗃️ Veri Modeli ve Temel İlişkiler
 
-Ana domain entity'leri:
+Ana domain kavramları:
 
-| Entity | Amaç |
+| Domain | Amaç |
 |---|---|
-| `AppUserEntity` | Yönetim kullanıcı hesabı |
-| `RoleEntity` | Platform ve cafe rol tanımları |
-| `CafeEntity` | Tenant root |
-| `CafeMembershipEntity` | User ↔ Cafe ↔ Role ilişkisi |
-| `CafeThemeEntity` | Cafe'ye özel kontrollü branding ayarları |
-| `CategoryEntity` | Cafe menü kategorisi |
-| `ProductEntity` | Cafe menü ürünü |
-| `RefreshTokenEntity` | Revocable refresh token persistence |
-| `AuditLogEntity` | Anlamlı yönetim olaylarının kaydı |
+| User | Yönetim kullanıcı hesabı |
+| Role | Platform ve cafe rol tanımları |
+| Cafe | Tenant root |
+| Cafe Membership | User ↔ Cafe ↔ Role ilişkisi |
+| Cafe Theme | Cafe'ye özel kontrollü branding ayarları |
+| Category | Cafe menü kategorisi |
+| Product | Cafe menü ürünü |
+| Refresh Token | Revocable refresh token persistence |
+| Audit Log | Anlamlı yönetim olaylarının kaydı |
 
 ### Public veri filtreleme
 
 Public menüde yalnızca uygun içerikler gösterilir.
 
 Cafe:
-
 - Active
 - Published
 - Not deleted
 
 Category:
-
 - Visible
 - Published
 - Not deleted
 
 Product:
-
 - Visible
 - Published
 - Not deleted
@@ -471,7 +458,6 @@ Kullanıcı tarafından arbitrary HTML, CSS veya JavaScript çalıştırılması
 V1'de her cafe için genel public menu QR kodu bulunur.
 
 Desteklenen çıktı formatları:
-
 - PNG
 - SVG
 
@@ -507,8 +493,8 @@ Desteklenen çıktı formatları:
 | **PostgreSQL** | Ana relational database |
 | **Redis** | Production admin session token store |
 | **Docker** | Containerization |
-| **Docker Compose** | Local infrastructure orchestration |
-| **Local/Replaceable File Storage** | Cafe ve ürün görselleri |
+| **Docker Compose** | Infrastructure orchestration |
+| **Replaceable File Storage** | Cafe ve ürün görselleri |
 
 ### Testing
 
@@ -536,14 +522,7 @@ CafeMenu'da güvenlik sadece UI seviyesinde uygulanmaz. Yetki kontrolleri backen
 
 CafeMenu.Web backend JWT token'larını browser JavaScript'e veya browser storage'a vermez.
 
-Browser cookie'sinde:
-
-- authenticated user claims
-- opaque session identifier
-
-bulunur.
-
-Access ve refresh token'lar server-side session store içinde tutulur.
+Browser cookie'sinde authenticated user claims ve opaque session identifier bulunur. Access ve refresh token'lar server-side session store içinde tutulur.
 
 - Development: `Memory`
 - Production-like environment: `Redis`
@@ -563,7 +542,6 @@ UI'da bir butonun gizlenmesi güvenlik olarak kabul edilmez; backend policy kont
 Sensitive authentication/setup endpoint'lerinde ASP.NET Core fixed-window rate limiting kullanılır.
 
 Korunan alanlara örnekler:
-
 - Login
 - Refresh token
 - Account setup
@@ -583,39 +561,21 @@ API ve Web tarafında temel browser güvenlik header'ları uygulanır:
 
 ### Host Filtering
 
-Production-like ortamlarda explicit `AllowedHosts` zorunludur.
-
-Wildcard (`*`) host kabulü production ortamında kullanılmaz.
+Production-like ortamlarda explicit `AllowedHosts` zorunludur. Wildcard (`*`) host kabulü production ortamında kullanılmaz.
 
 ### File Upload Security
 
-Image upload akışında:
-
-- extension
-- MIME/content type
-- file signature
-- maximum size
-- safe/generated storage path
-
-kontrolleri uygulanır.
-
-Normal image binary'leri PostgreSQL içinde tutulmaz.
+Image upload akışında extension, MIME/content type, file signature, maximum size ve safe/generated storage path kontrolleri uygulanır. Normal image binary'leri PostgreSQL içinde tutulmaz.
 
 ### Secrets
 
-Production secret'ları source code içine yazılmaz.
-
-Kullanılabilecek yöntemler:
-
-- Environment variables
-- .NET User Secrets
-- Deployment secret manager
+Production secret'ları source code içine yazılmaz; deployment ortamı üzerinden yönetilir.
 
 ---
 
 ## 🐳 Docker ve Production Yaklaşımı
 
-CafeMenu Docker Compose tabanlı geliştirme altyapısına sahiptir.
+CafeMenu Docker tabanlı deployment yaklaşımına sahiptir.
 
 Temel servisler:
 
@@ -626,17 +586,9 @@ PostgreSQL
 Redis
 ```
 
-Local build/start:
-
-```bash
-docker compose up -d --build
-```
-
-> Production credential veya secret değerleri Docker image içine bake edilmez.
-
 ### Container Security
 
-API ve Web runtime image'ları Microsoft .NET image'larındaki non-root `APP_UID` kullanıcısıyla çalışacak şekilde tasarlanmıştır.
+API ve Web runtime image'ları non-root kullanıcıyla çalışacak şekilde tasarlanmıştır.
 
 ### Persistent State
 
@@ -649,31 +601,11 @@ Production ortamında özellikle şu state'ler kalıcı storage gerektirir:
 
 ### Database Migrations
 
-Production database migration'ları uygulama startup'ında otomatik çalıştırılmaz.
-
-Schema değişiklikleri version-controlled EF Core migration'larıyla yönetilir ve production deployment için aynı release/commit'ten migration bundle oluşturulur.
-
-```powershell
-.\scripts\database\build-migration-bundle.ps1 -OutputDirectory .artifacts\migrations
-```
-
-Migration başarısız olursa deployment durdurulmalı ve problem araştırılmalıdır.
+Production database migration'ları uygulama startup'ında otomatik çalıştırılmaz. Schema değişiklikleri version-controlled EF Core migration'larıyla kontrollü deployment sürecinde uygulanır.
 
 ### Health Probes
 
-API ve Web:
-
-```text
-GET /health/live
-GET /health/ready
-```
-
-endpoint'lerini sağlar.
-
-- `/health/live`: process ve HTTP pipeline'ın ayakta olduğunu doğrular.
-- `/health/ready`: uygulamanın trafiğe hazır olup olmadığını dependency kontrolleriyle doğrular.
-
-API readiness PostgreSQL bağlantısını; Web readiness ise Redis session provider aktif olduğunda Redis'i kontrol eder.
+API ve Web, liveness ve readiness kontrolleri sağlar. Readiness kontrolleri ilgili dependency'lerin kullanılabilirliğini doğrular.
 
 ---
 
@@ -759,45 +691,25 @@ Müşterinin herhangi bir authentication işlemine ihtiyaç duymadan QR kod üze
 
 ---
 
-## 📁 Proje Yapısı
+## 📁 Public Repository Yapısı
+
+Bu public repository yalnızca proje tanıtımı için gerekli içerikleri barındırır:
 
 ```text
 CafeMenu/
-│
-├── src/
-│   ├── CafeMenu.Api/
-│   ├── CafeMenu.Web/
-│   └── CafeMenu.Shared/
-│
-├── tests/
-│   └── CafeMenu.Tests/
-│
-├── docs/
-│   ├── images/
-│   ├── API_CONVENTIONS.md
-│   ├── ARCHITECTURE.md
-│   ├── DATABASE_CONVENTIONS.md
-│   ├── DATA_MODEL.md
-│   ├── DEVELOPMENT_GUIDE.md
-│   ├── DOCKER_GUIDE.md
-│   ├── ENVIRONMENT.md
-│   ├── MULTI_TENANCY.md
-│   ├── PRODUCTION_CHECKLIST.md
-│   ├── PRODUCT_REQUIREMENTS.md
-│   ├── SECURITY.md
-│   └── UI_BRANDING.md
-│
-├── scripts/
-├── .env.example
-├── docker-compose.yml
-└── CafeMenu.slnx
+├── README.md
+└── docs/
+    └── images/
+        └── UI screenshots
 ```
+
+Tam uygulama source code'u, internal `.md` dokümantasyonu, test kaynakları, migration dosyaları, deployment scriptleri ve environment yapılandırmaları bu public görünümde yer almaz.
 
 ---
 
 ## 🧪 Testler
 
-Proje özellikle güvenlik ve tenant izolasyonu gibi kritik davranışlar için test altyapısına sahiptir.
+Proje özellikle güvenlik ve tenant izolasyonu gibi kritik davranışlar için geniş bir test altyapısına sahiptir.
 
 Test kapsamına örnekler:
 
@@ -814,19 +726,7 @@ Test kapsamına örnekler:
 - Admin session behavior
 - Image/file validation
 
-Build:
-
-```bash
-dotnet build CafeMenu.slnx
-```
-
-Full test suite:
-
-```bash
-dotnet test CafeMenu.slnx --no-build
-```
-
-README hazırlanırken mevcut full suite sonucu:
+Son doğrulanan full suite sonucu:
 
 ```text
 509 total
@@ -834,26 +734,6 @@ README hazırlanırken mevcut full suite sonucu:
 0 failed
 0 skipped
 ```
-
----
-
-## 📚 Dokümantasyon
-
-Repository, README dışında ayrıntılı proje dokümantasyonu da içerir.
-
-| Doküman | İçerik |
-|---|---|
-| `docs/PRODUCT_REQUIREMENTS.md` | Ürün vizyonu, roller ve V1 kapsamı |
-| `docs/ARCHITECTURE.md` | Layered architecture ve katman kuralları |
-| `docs/MULTI_TENANCY.md` | Tenant modeli ve izolasyon gereksinimleri |
-| `docs/DATA_MODEL.md` | Entity'ler ve veri ilişkileri |
-| `docs/SECURITY.md` | Authentication, authorization ve security hardening |
-| `docs/UI_BRANDING.md` | Public menu ve branding modeli |
-| `docs/DOCKER_GUIDE.md` | Docker ve deployment yaklaşımı |
-| `docs/DEVELOPMENT_GUIDE.md` | Standart development workflow |
-| `docs/PRODUCTION_CHECKLIST.md` | Production öncesi doğrulama adımları |
-| `docs/API_CONVENTIONS.md` | API response ve endpoint convention'ları |
-| `docs/DATABASE_CONVENTIONS.md` | PostgreSQL / EF Core database kuralları |
 
 ---
 
@@ -873,7 +753,7 @@ CafeMenu V1'in odağı **dijital menü yönetimi ve QR tabanlı public erişimdi
 - QR generation
 - Image/file storage abstraction
 - Cafe dashboard
-- Docker tabanlı local infrastructure
+- Docker tabanlı infrastructure
 - Tenant isolation testleri
 
 ### V1 dışında
@@ -894,8 +774,6 @@ Aşağıdaki özellikler mevcut V1 kapsamında değildir:
 - Multi-currency
 
 Bu ayrım, CafeMenu'nun V1'de güvenli ve yönetilebilir bir QR menu platformuna odaklanmasını sağlar.
-
-
 
 <p align="center">
   <strong>CafeMenu</strong><br>

@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/CafeMenu.Api/CafeMenu.Api.csproj" />
-    <Project Path="src/CafeMenu.Web/CafeMenu.Web.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/CafeMenu.Tests/CafeMenu.Tests.csproj" />
-  </Folder>
-</Solution>
