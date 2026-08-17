@@ -1,4 +1,4 @@
-# ☕ CafeMenu
+#  CafeMenu
 
 <p align="center">
   <strong>Multi-tenant QR menü yönetim platformu</strong><br>
@@ -895,17 +895,7 @@ Aşağıdaki özellikler mevcut V1 kapsamında değildir:
 
 Bu ayrım, CafeMenu'nun V1'de güvenli ve yönetilebilir bir QR menu platformuna odaklanmasını sağlar.
 
----
 
-## 👨‍💻 Geliştirici
-
-**Nihat Akkaya**
-
-Computer Engineering Student · Software Developer
-
-GitHub: [@nihatakkaya](https://github.com/nihatakkaya)
-
----
 
 <p align="center">
   <strong>CafeMenu</strong><br>
