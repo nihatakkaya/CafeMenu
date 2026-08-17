@@ -34,9 +34,7 @@
 - [Ekran Görüntüleri](#-ekran-görüntüleri)
 - [Proje Yapısı](#-proje-yapısı)
 - [Testler](#-testler)
-- [Dokümantasyon](#-dokümantasyon)
 - [V1 Kapsamı](#-v1-kapsamı)
-- [Geliştirici](#-geliştirici)
 
 ---
 
@@ -626,7 +624,7 @@ PostgreSQL
 Redis
 ```
 
-Local build/start:
+Local build/start için `POSTGRES_PASSWORD` ve `JWT_SIGNING_KEY` environment variable'ları tanımlanmalıdır:
 
 ```bash
 docker compose up -d --build
@@ -773,19 +771,7 @@ CafeMenu/
 │   └── CafeMenu.Tests/
 │
 ├── docs/
-│   ├── images/
-│   ├── API_CONVENTIONS.md
-│   ├── ARCHITECTURE.md
-│   ├── DATABASE_CONVENTIONS.md
-│   ├── DATA_MODEL.md
-│   ├── DEVELOPMENT_GUIDE.md
-│   ├── DOCKER_GUIDE.md
-│   ├── ENVIRONMENT.md
-│   ├── MULTI_TENANCY.md
-│   ├── PRODUCTION_CHECKLIST.md
-│   ├── PRODUCT_REQUIREMENTS.md
-│   ├── SECURITY.md
-│   └── UI_BRANDING.md
+│   └── images/
 │
 ├── scripts/
 ├── .env.example
@@ -834,26 +820,6 @@ README hazırlanırken mevcut full suite sonucu:
 0 failed
 0 skipped
 ```
-
----
-
-## 📚 Dokümantasyon
-
-Repository, README dışında ayrıntılı proje dokümantasyonu da içerir.
-
-| Doküman | İçerik |
-|---|---|
-| `docs/PRODUCT_REQUIREMENTS.md` | Ürün vizyonu, roller ve V1 kapsamı |
-| `docs/ARCHITECTURE.md` | Layered architecture ve katman kuralları |
-| `docs/MULTI_TENANCY.md` | Tenant modeli ve izolasyon gereksinimleri |
-| `docs/DATA_MODEL.md` | Entity'ler ve veri ilişkileri |
-| `docs/SECURITY.md` | Authentication, authorization ve security hardening |
-| `docs/UI_BRANDING.md` | Public menu ve branding modeli |
-| `docs/DOCKER_GUIDE.md` | Docker ve deployment yaklaşımı |
-| `docs/DEVELOPMENT_GUIDE.md` | Standart development workflow |
-| `docs/PRODUCTION_CHECKLIST.md` | Production öncesi doğrulama adımları |
-| `docs/API_CONVENTIONS.md` | API response ve endpoint convention'ları |
-| `docs/DATABASE_CONVENTIONS.md` | PostgreSQL / EF Core database kuralları |
 
 ---
 
