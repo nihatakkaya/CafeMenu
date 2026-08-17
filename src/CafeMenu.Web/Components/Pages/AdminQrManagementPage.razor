@@ -1,0 +1,93 @@
+@page "/admin/cafes/{CafeId:long}/qr"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject IAdminQrCodeService QrCodeService
+
+<PageTitle>QR Kod</PageTitle>
+
+<section class="admin-page admin-qr-page">
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h1>Yükleniyor</h1>
+            <p>QR kod bilgileri hazırlanıyor.</p>
+        </section>
+    }
+    else if (_status == AdminQrRequestStatus.Failure)
+    {
+        <section class="admin-state admin-state-warning" role="alert">
+            <h1>QR kod yüklenemedi</h1>
+            <p>Şu anda QR kod oluşturulamıyor. Lütfen daha sonra tekrar deneyin.</p>
+        </section>
+    }
+    else if (_qrCode is null)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Erişim yok</h1>
+            <p>Bu cafe için QR kod yönetimi hesabınızla erişilebilir değil.</p>
+        </section>
+    }
+    else
+    {
+        <AdminCafeHeader
+            Cafe="_qrCode.Cafe"
+            ActiveSection="AdminCafeSection.Qr"
+            Kicker="QR Kod"
+            Summary="Müşterilerin tarayacağı QR kod müşteri menüsü bağlantısını açar." />
+
+        @if (!_qrCode.Cafe.IsActive || !_qrCode.Cafe.IsPublished)
+        {
+            <section class="admin-state admin-state-warning admin-qr-warning" role="alert">
+                <h2>Müşteri menüsü şu anda yayınlanmayabilir</h2>
+                <p>
+                    QR kod oluşturulabilir, ancak cafe pasifse veya taslak durumundaysa müşteri menüsü görüntülenmez.
+                    Yayın durumunu Cafe Ayarları ekranından kontrol edin.
+                </p>
+            </section>
+        }
+
+        <section class="admin-qr-panel" aria-label="QR kod">
+            <div class="admin-qr-preview">
+                <img src="@_qrCode.PreviewPngDataUri" alt="@($"{_qrCode.Cafe.Name} QR kod")" />
+            </div>
+
+            <div class="admin-qr-details">
+                <div>
+                    <p class="admin-kicker">Müşteri Menüsü Bağlantısı</p>
+                    <p class="admin-qr-url">@_qrCode.PublicMenuUrl</p>
+                </div>
+
+                <div class="admin-qr-actions" aria-label="QR kod işlemleri">
+                    <a class="admin-primary-button" href="@_qrCode.PngDownloadUrl">PNG indir</a>
+                    <a class="admin-secondary-button" href="@_qrCode.SvgDownloadUrl">SVG indir</a>
+                    <a class="admin-secondary-button" href="@($"/c/{_qrCode.Cafe.Slug}")" target="_blank" rel="noopener noreferrer">Müşteri menüsünü aç</a>
+                    <a class="admin-secondary-button" href="@($"/admin/cafes/{_qrCode.Cafe.Id}/settings")">Yayın ayarları</a>
+                </div>
+
+                <p class="admin-security-note">
+                    QR kod, cafe için kayıtlı müşteri menüsü bağlantısından oluşturulur.
+                </p>
+            </div>
+        </section>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public long CafeId { get; set; }
+
+    private bool _isLoading = true;
+    private AdminQrRequestStatus _status;
+    private AdminQrPageModel? _qrCode;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoading = true;
+        _qrCode = null;
+
+        var result = await QrCodeService.GetPageModelAsync(CafeId, CancellationToken.None);
+        _status = result.Status;
+        _qrCode = result.QrCode;
+
+        _isLoading = false;
+    }
+}

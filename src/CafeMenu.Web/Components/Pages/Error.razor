@@ -1,0 +1,28 @@
+﻿@page "/Error"
+@using System.Diagnostics
+
+<PageTitle>Error</PageTitle>
+
+<section class="simple-page simple-page-error" role="alert">
+    <p class="simple-kicker">Hata</p>
+    <h1>İşlem tamamlanamadı</h1>
+    <p>Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.</p>
+
+    @if (ShowRequestId)
+    {
+        <p class="simple-request-id">
+            <strong>Request ID:</strong> <code>@RequestId</code>
+        </p>
+    }
+</section>
+
+@code{
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+
+    private string? RequestId { get; set; }
+    private bool ShowRequestId => !string.IsNullOrEmpty(RequestId);
+
+    protected override void OnInitialized() =>
+        RequestId = Activity.Current?.Id ?? HttpContext?.TraceIdentifier;
+}

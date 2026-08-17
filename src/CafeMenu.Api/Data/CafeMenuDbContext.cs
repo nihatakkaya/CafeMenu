@@ -1,0 +1,47 @@
+using Microsoft.EntityFrameworkCore;
+using CafeMenu.Api.Data.Configurations;
+using CafeMenu.Api.Entities;
+
+namespace CafeMenu.Api.Data;
+
+public sealed class CafeMenuDbContext : DbContext
+{
+    public CafeMenuDbContext(DbContextOptions<CafeMenuDbContext> options)
+        : base(options)
+    {
+    }
+
+    public DbSet<AppUserEntity> AppUsers => Set<AppUserEntity>();
+
+    public DbSet<RoleEntity> Roles => Set<RoleEntity>();
+
+    public DbSet<RefreshTokenEntity> RefreshTokens => Set<RefreshTokenEntity>();
+
+    public DbSet<UserSetupTokenEntity> UserSetupTokens => Set<UserSetupTokenEntity>();
+
+    public DbSet<CafeEntity> Cafes => Set<CafeEntity>();
+
+    public DbSet<CafeMembershipEntity> CafeMemberships => Set<CafeMembershipEntity>();
+
+    public DbSet<CategoryEntity> Categories => Set<CategoryEntity>();
+
+    public DbSet<ProductEntity> Products => Set<ProductEntity>();
+
+    public DbSet<CafeThemeEntity> CafeThemes => Set<CafeThemeEntity>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.HasDefaultSchema("public");
+        modelBuilder.ApplyConfiguration(new AppUserConfiguration());
+        modelBuilder.ApplyConfiguration(new RoleConfiguration());
+        modelBuilder.ApplyConfiguration(new RefreshTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new UserSetupTokenConfiguration());
+        modelBuilder.ApplyConfiguration(new CafeConfiguration());
+        modelBuilder.ApplyConfiguration(new CafeMembershipConfiguration());
+        modelBuilder.ApplyConfiguration(new CategoryConfiguration());
+        modelBuilder.ApplyConfiguration(new ProductConfiguration());
+        modelBuilder.ApplyConfiguration(new CafeThemeConfiguration());
+        modelBuilder.ConfigureAppUserRole();
+    }
+}

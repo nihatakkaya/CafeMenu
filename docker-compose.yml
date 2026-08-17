@@ -1,0 +1,108 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: cafemenu-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cafemenu}
+      POSTGRES_USER: ${POSTGRES_USER:-cafemenu_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_for_local_dev}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:8-alpine
+    container_name: cafemenu-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/CafeMenu.Api/Dockerfile
+    container_name: cafemenu-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: 8080
+      AllowedHosts: ${API_ALLOWED_HOSTS:-localhost;127.0.0.1;[::1];api}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=${POSTGRES_DB:-cafemenu};Username=${POSTGRES_USER:-cafemenu_user};Password=${POSTGRES_PASSWORD:-change_me_for_local_dev}
+      Jwt__Issuer: ${JWT_ISSUER:-CafeMenu.Development}
+      Jwt__Audience: ${JWT_AUDIENCE:-CafeMenu.Api}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-replace_with_local_development_key_at_least_32_chars}
+      Jwt__AccessTokenMinutes: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      Jwt__RefreshTokenDays: ${JWT_REFRESH_TOKEN_DAYS:-14}
+      Database__Retry__Enabled: ${DATABASE_RETRY_ENABLED:-true}
+      Database__Retry__MaxRetryCount: ${DATABASE_RETRY_MAX_RETRY_COUNT:-3}
+      Database__Retry__MaxRetryDelaySeconds: ${DATABASE_RETRY_MAX_RETRY_DELAY_SECONDS:-5}
+      ImageStorage__Provider: ${IMAGE_STORAGE_PROVIDER:-Local}
+      ImageStorage__LocalRoot: ${IMAGE_STORAGE_LOCAL_ROOT:-/var/cafemenu/media}
+      ImageStorage__PublicBaseUrl: ${IMAGE_STORAGE_PUBLIC_BASE_URL:-http://localhost:8080/media}
+      ImageStorage__MaxFileSizeBytes: ${IMAGE_STORAGE_MAX_FILE_SIZE_BYTES:-5242880}
+      ReverseProxy__Enabled: ${REVERSE_PROXY_ENABLED:-false}
+      ReverseProxy__ForwardLimit: ${REVERSE_PROXY_FORWARD_LIMIT:-1}
+      RateLimiting__Login__PermitLimit: ${RATE_LIMIT_LOGIN_PERMIT_LIMIT:-10}
+      RateLimiting__Login__WindowSeconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:-60}
+      RateLimiting__Refresh__PermitLimit: ${RATE_LIMIT_REFRESH_PERMIT_LIMIT:-60}
+      RateLimiting__Refresh__WindowSeconds: ${RATE_LIMIT_REFRESH_WINDOW_SECONDS:-60}
+      RateLimiting__AccountSetup__PermitLimit: ${RATE_LIMIT_ACCOUNT_SETUP_PERMIT_LIMIT:-5}
+      RateLimiting__AccountSetup__WindowSeconds: ${RATE_LIMIT_ACCOUNT_SETUP_WINDOW_SECONDS:-300}
+      RateLimiting__PlatformUserSetup__PermitLimit: ${RATE_LIMIT_PLATFORM_USER_SETUP_PERMIT_LIMIT:-20}
+      RateLimiting__PlatformUserSetup__WindowSeconds: ${RATE_LIMIT_PLATFORM_USER_SETUP_WINDOW_SECONDS:-60}
+    ports:
+      - "${API_HTTP_PORT:-8080}:8080"
+    volumes:
+      - media_data:/var/cafemenu/media
+
+  web:
+    build:
+      context: .
+      dockerfile: src/CafeMenu.Web/Dockerfile
+    container_name: cafemenu-web
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_HTTP_PORTS: 8080
+      AllowedHosts: ${WEB_ALLOWED_HOSTS:-localhost;127.0.0.1;[::1];web}
+      PublicApi__BaseUrl: ${PUBLIC_API_BASE_URL:-http://api:8080}
+      PublicMenu__BaseUrl: ${PUBLIC_MENU_BASE_URL:-http://localhost:8081}
+      AdminApi__BaseUrl: ${ADMIN_API_BASE_URL:-http://api:8080}
+      HttpClients__DefaultTimeoutSeconds: ${HTTP_CLIENT_DEFAULT_TIMEOUT_SECONDS:-15}
+      AdminSession__Provider: ${ADMIN_SESSION_PROVIDER:-Memory}
+      AdminSession__KeyPrefix: ${ADMIN_SESSION_KEY_PREFIX:-cafemenu:admin-session:}
+      AdminSession__RedisConnectionString: ${ADMIN_SESSION_REDIS_CONNECTION_STRING:-redis:6379,abortConnect=false}
+      DataProtection__ApplicationName: ${DATA_PROTECTION_APPLICATION_NAME:-CafeMenu.Web}
+      DataProtection__KeyRingPath: ${DATA_PROTECTION_KEY_RING_PATH:-}
+      ReverseProxy__Enabled: ${REVERSE_PROXY_ENABLED:-false}
+      ReverseProxy__ForwardLimit: ${REVERSE_PROXY_FORWARD_LIMIT:-1}
+      RateLimiting__Login__PermitLimit: ${RATE_LIMIT_LOGIN_PERMIT_LIMIT:-10}
+      RateLimiting__Login__WindowSeconds: ${RATE_LIMIT_LOGIN_WINDOW_SECONDS:-60}
+      RateLimiting__Refresh__PermitLimit: ${RATE_LIMIT_REFRESH_PERMIT_LIMIT:-60}
+      RateLimiting__Refresh__WindowSeconds: ${RATE_LIMIT_REFRESH_WINDOW_SECONDS:-60}
+      RateLimiting__AccountSetup__PermitLimit: ${RATE_LIMIT_ACCOUNT_SETUP_PERMIT_LIMIT:-5}
+      RateLimiting__AccountSetup__WindowSeconds: ${RATE_LIMIT_ACCOUNT_SETUP_WINDOW_SECONDS:-300}
+      RateLimiting__PlatformUserSetup__PermitLimit: ${RATE_LIMIT_PLATFORM_USER_SETUP_PERMIT_LIMIT:-20}
+      RateLimiting__PlatformUserSetup__WindowSeconds: ${RATE_LIMIT_PLATFORM_USER_SETUP_WINDOW_SECONDS:-60}
+    ports:
+      - "${WEB_HTTP_PORT:-8081}:8080"
+
+volumes:
+  postgres_data:
+  media_data:

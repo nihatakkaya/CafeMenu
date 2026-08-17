@@ -1,0 +1,457 @@
+@page "/admin/cafes/{CafeId:long}/branding"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using System.Text.RegularExpressions
+@inject IAdminCafeApiClient AdminCafeApiClient
+@inject IAdminBrandingApiClient AdminBrandingApiClient
+
+<PageTitle>Görünüm</PageTitle>
+
+<section class="admin-page admin-branding-page">
+    @if (_isLoading)
+    {
+        <section class="admin-state" aria-live="polite">
+            <h1>Yükleniyor</h1>
+            <p>Görünüm ayarları hazırlanıyor.</p>
+        </section>
+    }
+    else if (_accessLoadFailed)
+    {
+        <section class="admin-state admin-state-warning" role="alert">
+            <h1>Cafe erişimi doğrulanamadı</h1>
+            <p>Şu anda cafe erişimi kontrol edilemiyor. Lütfen daha sonra tekrar deneyin.</p>
+        </section>
+    }
+    else if (_cafe is null)
+    {
+        <section class="admin-state admin-state-denied" role="alert">
+            <h1>Erişim yok</h1>
+            <p>Bu cafe hesabınız için erişilebilir değil veya artık yönetilebilir durumda değil.</p>
+        </section>
+    }
+    else
+    {
+        <AdminCafeHeader
+            Cafe="_cafe"
+            ActiveSection="AdminCafeSection.Branding"
+            Kicker="Görünüm Ayarları"
+            Summary="QR menünün kontrollü tema, renk ve karşılama metinlerini yönetin." />
+
+        @if (!string.IsNullOrWhiteSpace(_pageMessage))
+        {
+            <section class="@_pageMessageCssClass" role="status">@_pageMessage</section>
+        }
+
+        @if (_brandingLoadFailed)
+        {
+            <section class="admin-state admin-state-warning" role="alert">
+                <h2>Görünüm ayarları yüklenemedi</h2>
+                <p>Şu anda branding bilgisi alınamıyor.</p>
+            </section>
+        }
+        else
+        {
+            @if (_isDefaultTheme)
+            {
+                <section class="admin-message admin-message-info" role="status">
+                    Varsayılan tema değerleri gösteriliyor. Kaydettiğinizde bu cafe için görünüm ayarları hazırlanır.
+                </section>
+            }
+
+            <section class="admin-panel admin-image-panel">
+                <h2>Görseller</h2>
+                <div class="admin-image-grid">
+                    <article class="admin-image-item">
+                        <h3>Logo</h3>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.LogoImageUrl))
+                        {
+                            <img class="admin-image-preview" src="@_branding.LogoImageUrl" alt="Cafe logosu" />
+                        }
+                        else
+                        {
+                            <p>Henüz logo yok.</p>
+                        }
+                        <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/branding/upload-logo")">
+                            <AntiforgeryToken />
+                            <label>
+                                Logo yükle
+                                <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                            </label>
+                            <button class="admin-primary-button" type="submit">Yükle</button>
+                        </form>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.LogoImageUrl))
+                        {
+                            <form method="post" action="@($"/admin/cafes/{_cafe.Id}/branding/remove-logo")">
+                                <AntiforgeryToken />
+                                <button class="admin-danger-button" type="submit">Logoyu kaldır</button>
+                            </form>
+                        }
+                    </article>
+
+                    <article class="admin-image-item">
+                        <h3>Kapak</h3>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.CoverImageUrl))
+                        {
+                            <img class="admin-image-preview admin-image-preview-wide" src="@_branding.CoverImageUrl" alt="Cafe kapak görseli" />
+                        }
+                        else
+                        {
+                            <p>Henüz kapak görseli yok.</p>
+                        }
+                        <form method="post" enctype="multipart/form-data" action="@($"/admin/cafes/{_cafe.Id}/branding/upload-cover")">
+                            <AntiforgeryToken />
+                            <label>
+                                Kapak yükle
+                                <input name="File" type="file" accept="image/jpeg,image/png,image/webp" required />
+                            </label>
+                            <button class="admin-primary-button" type="submit">Yükle</button>
+                        </form>
+                        @if (!string.IsNullOrWhiteSpace(_branding?.CoverImageUrl))
+                        {
+                            <form method="post" action="@($"/admin/cafes/{_cafe.Id}/branding/remove-cover")">
+                                <AntiforgeryToken />
+                                <button class="admin-danger-button" type="submit">Kapak görselini kaldır</button>
+                            </form>
+                        }
+                    </article>
+                </div>
+            </section>
+
+            <div class="admin-branding-layout">
+                <section class="admin-panel">
+                    <h2>Görünüm formu</h2>
+                    <EditForm Model="_formModel" OnValidSubmit="SaveBrandingAsync" FormName="UpdateCafeBrandingForm" method="post">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="admin-form-grid">
+                            <label>
+                                Logo bağlantısı
+                                <InputText @bind-Value="_formModel.LogoImageUrl" maxlength="500" />
+                            </label>
+                            <label>
+                                Kapak görseli bağlantısı
+                                <InputText @bind-Value="_formModel.CoverImageUrl" maxlength="500" />
+                            </label>
+                            <label>
+                                Tema
+                                <InputSelect @bind-Value="_formModel.ThemePreset">
+                                    @foreach (var preset in AdminBrandingConstants.ThemePresets)
+                                    {
+                                        <option value="@preset">@preset</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                            <label>
+                                Yazı tipi
+                                <InputSelect @bind-Value="_formModel.FontPreset">
+                                    @foreach (var preset in AdminBrandingConstants.FontPresets)
+                                    {
+                                        <option value="@preset">@preset</option>
+                                    }
+                                </InputSelect>
+                            </label>
+                            <label>
+                                Ana renk
+                                <InputText type="color" @bind-Value="_formModel.PrimaryColor" />
+                                <span class="admin-color-value">@_formModel.PrimaryColor</span>
+                            </label>
+                            <label>
+                                İkincil renk
+                                <InputText type="color" @bind-Value="_formModel.SecondaryColor" />
+                                <span class="admin-color-value">@_formModel.SecondaryColor</span>
+                            </label>
+                            <label>
+                                Vurgu rengi
+                                <InputText type="color" @bind-Value="_formModel.AccentColor" />
+                                <span class="admin-color-value">@_formModel.AccentColor</span>
+                            </label>
+                            <label>
+                                Arka plan rengi
+                                <InputText type="color" @bind-Value="_formModel.BackgroundColor" />
+                                <span class="admin-color-value">@_formModel.BackgroundColor</span>
+                            </label>
+                            <label>
+                                Metin rengi
+                                <InputText type="color" @bind-Value="_formModel.TextColor" />
+                                <span class="admin-color-value">@_formModel.TextColor</span>
+                            </label>
+                            <label class="admin-form-wide">
+                                Karşılama başlığı
+                                <InputText @bind-Value="_formModel.WelcomeTitle" maxlength="120" />
+                            </label>
+                            <label class="admin-form-wide">
+                                Karşılama açıklaması
+                                <InputTextArea @bind-Value="_formModel.WelcomeDescription" maxlength="500" />
+                            </label>
+                            <label class="admin-check">
+                                <InputCheckbox @bind-Value="_formModel.IsPublished" />
+                                Müşteri menüsünde yayınla
+                            </label>
+                        </div>
+
+                        <div class="admin-actions">
+                            <button class="admin-primary-button" type="submit" disabled="@_isSaving">Kaydet</button>
+                            <a class="admin-secondary-button" href="@CurrentBrandingRoute">Sıfırla</a>
+                        </div>
+                    </EditForm>
+                </section>
+
+                <aside class="admin-panel admin-preview-panel" aria-label="Güvenli tema önizleme">
+                    <h2>Önizleme</h2>
+                    <div class="@GetPreviewClass(_formModel.ThemePreset, _formModel.FontPreset)" style="@BuildPreviewStyle(_formModel)">
+                        <div class="preview-cover">
+                            @if (!string.IsNullOrWhiteSpace(_formModel.CoverImageUrl))
+                            {
+                                <span>Kapak görseli tanımlı</span>
+                            }
+                        </div>
+                        <div class="preview-body">
+                            @if (!string.IsNullOrWhiteSpace(_formModel.LogoImageUrl))
+                            {
+                                <span class="preview-logo">Logo</span>
+                            }
+                            <p class="preview-label">Menü</p>
+                            <h3>@_cafe.Name</h3>
+                            @if (!string.IsNullOrWhiteSpace(_formModel.WelcomeTitle))
+                            {
+                                <h4>@_formModel.WelcomeTitle</h4>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(_formModel.WelcomeDescription))
+                            {
+                                <p>@_formModel.WelcomeDescription</p>
+                            }
+                            <span class="preview-chip">@_formModel.ThemePreset</span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        }
+    }
+</section>
+
+@code {
+    [Parameter]
+    public long CafeId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "imageUpload")]
+    private string? ImageUploadResult { get; set; }
+
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private bool _accessLoadFailed;
+    private bool _brandingLoadFailed;
+    private bool _isDefaultTheme;
+    private string? _pageMessage;
+    private string _pageMessageCssClass = "admin-message";
+    private AdminCafeResponse? _cafe;
+    private AdminBrandingResponse? _branding;
+    private AdminBrandingFormModel _formModel = new();
+
+    [SupplyParameterFromForm(FormName = "UpdateCafeBrandingForm", Name = "_formModel")]
+    private AdminBrandingFormModel? BrandingFormModel { get; set; }
+
+    private string CurrentBrandingRoute => $"/admin/cafes/{CafeId}/branding";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        ResetPageState();
+        _formModel = BrandingFormModel ?? new AdminBrandingFormModel();
+
+        var cafeResult = await AdminCafeApiClient.GetMyCafesAsync(CancellationToken.None);
+        if (cafeResult.Status == AdminCafeListStatus.Failure)
+        {
+            _accessLoadFailed = true;
+            _isLoading = false;
+            return;
+        }
+
+        _cafe = cafeResult.Cafes.SingleOrDefault(cafe => cafe.Id == CafeId);
+        if (_cafe is null)
+        {
+            _isLoading = false;
+            return;
+        }
+
+        await LoadBrandingAsync(shouldApplyToForm: BrandingFormModel is null);
+        _isLoading = false;
+    }
+
+    private async Task LoadBrandingAsync(bool shouldApplyToForm)
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        _brandingLoadFailed = false;
+        var result = await AdminBrandingApiClient.GetCafeBrandingAsync(_cafe.Id, CancellationToken.None);
+        if (result.Status == AdminBrandingRequestStatus.Success && result.Branding is not null)
+        {
+            _branding = result.Branding;
+            _isDefaultTheme = IsDefaultTheme(result.Branding);
+            if (shouldApplyToForm)
+            {
+                _formModel = AdminBrandingFormModel.FromBranding(result.Branding);
+            }
+
+            return;
+        }
+
+        _branding = null;
+        _brandingLoadFailed = true;
+    }
+
+    private async Task SaveBrandingAsync()
+    {
+        if (_cafe is null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+        ClearMessage();
+
+        try
+        {
+            var result = await AdminBrandingApiClient.UpdateCafeBrandingAsync(
+                _cafe.Id,
+                new AdminUpdateCafeBrandingRequest(
+                    NormalizeOptionalText(_formModel.LogoImageUrl),
+                    NormalizeOptionalText(_formModel.CoverImageUrl),
+                    _formModel.PrimaryColor,
+                    _formModel.SecondaryColor,
+                    _formModel.AccentColor,
+                    _formModel.BackgroundColor,
+                    _formModel.TextColor,
+                    NormalizeOptionalText(_formModel.WelcomeTitle),
+                    NormalizeOptionalText(_formModel.WelcomeDescription),
+                    _formModel.FontPreset,
+                    _formModel.ThemePreset,
+                    _formModel.IsPublished),
+                CancellationToken.None);
+
+            if (result.Status == AdminBrandingRequestStatus.Success && result.Branding is not null)
+            {
+                _branding = result.Branding;
+                _formModel = AdminBrandingFormModel.FromBranding(result.Branding);
+                _isDefaultTheme = IsDefaultTheme(result.Branding);
+                SetSuccessMessage("Görünüm ayarları kaydedildi.");
+                return;
+            }
+
+            if (result.Status == AdminBrandingRequestStatus.ValidationError)
+            {
+                SetErrorMessage("Form alanlarını kontrol edin. Lütfen değerleri gözden geçirin.");
+                return;
+            }
+
+            SetErrorMessage("Görünüm ayarları kaydedilemedi.");
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void ResetPageState()
+    {
+        _isLoading = true;
+        _isSaving = false;
+        _accessLoadFailed = false;
+        _brandingLoadFailed = false;
+        _isDefaultTheme = false;
+        _cafe = null;
+        _branding = null;
+        ClearMessage();
+        ApplyImageUploadMessage();
+    }
+
+    private void ApplyImageUploadMessage()
+    {
+        switch (ImageUploadResult)
+        {
+            case "success":
+                SetSuccessMessage("Görsel işlemi tamamlandı.");
+                break;
+            case "validation":
+                SetErrorMessage("Görsel JPEG, PNG veya WebP formatında ve izin verilen boyutta olmalıdır.");
+                break;
+            case "failure":
+                SetErrorMessage("Görsel işlemi tamamlanamadı.");
+                break;
+        }
+    }
+
+    private void SetSuccessMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-success";
+    }
+
+    private void SetErrorMessage(string message)
+    {
+        _pageMessage = message;
+        _pageMessageCssClass = "admin-message admin-message-error";
+    }
+
+    private void ClearMessage()
+    {
+        _pageMessage = null;
+        _pageMessageCssClass = "admin-message";
+    }
+
+    private static bool IsDefaultTheme(AdminBrandingResponse branding)
+    {
+        return !branding.IsPublished &&
+            string.Equals(branding.PrimaryColor, AdminBrandingConstants.DefaultPrimaryColor, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(branding.SecondaryColor, AdminBrandingConstants.DefaultSecondaryColor, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(branding.AccentColor, AdminBrandingConstants.DefaultAccentColor, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(branding.BackgroundColor, AdminBrandingConstants.DefaultBackgroundColor, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(branding.TextColor, AdminBrandingConstants.DefaultTextColor, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(branding.FontPreset, AdminBrandingConstants.SystemFontPreset, StringComparison.Ordinal) &&
+            string.Equals(branding.ThemePreset, AdminBrandingConstants.ClassicThemePreset, StringComparison.Ordinal);
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string BuildPreviewStyle(AdminBrandingFormModel model)
+    {
+        return string.Join(
+            ' ',
+            $"--preview-primary-color: {SafeHex(model.PrimaryColor, AdminBrandingConstants.DefaultPrimaryColor)};",
+            $"--preview-secondary-color: {SafeHex(model.SecondaryColor, AdminBrandingConstants.DefaultSecondaryColor)};",
+            $"--preview-accent-color: {SafeHex(model.AccentColor, AdminBrandingConstants.DefaultAccentColor)};",
+            $"--preview-background-color: {SafeHex(model.BackgroundColor, AdminBrandingConstants.DefaultBackgroundColor)};",
+            $"--preview-text-color: {SafeHex(model.TextColor, AdminBrandingConstants.DefaultTextColor)};");
+    }
+
+    private static string SafeHex(string? value, string fallback)
+    {
+        return value is not null &&
+            Regex.IsMatch(value, AdminBrandingConstants.HexColorPattern, RegexOptions.CultureInvariant)
+                ? value
+                : fallback;
+    }
+
+    private static string GetPreviewClass(string themePreset, string fontPreset)
+    {
+        var themeClass = themePreset switch
+        {
+            AdminBrandingConstants.ModernThemePreset => "preview-theme-modern",
+            AdminBrandingConstants.CompactThemePreset => "preview-theme-compact",
+            _ => "preview-theme-classic"
+        };
+        var fontClass = fontPreset switch
+        {
+            AdminBrandingConstants.SansFontPreset => "preview-font-sans",
+            AdminBrandingConstants.SerifFontPreset => "preview-font-serif",
+            _ => "preview-font-system"
+        };
+
+        return $"admin-branding-preview {themeClass} {fontClass}";
+    }
+
+}

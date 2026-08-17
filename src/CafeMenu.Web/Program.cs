@@ -1,0 +1,101 @@
+using CafeMenu.Web.Components;
+using CafeMenu.Web.AccountSetup;
+using CafeMenu.Web.AdminBranding;
+using CafeMenu.Web.AdminCafe;
+using CafeMenu.Web.AdminCafeSettings;
+using CafeMenu.Web.AdminCategory;
+using CafeMenu.Web.AdminPlatform;
+using CafeMenu.Web.AdminProduct;
+using CafeMenu.Web.AdminQr;
+using CafeMenu.Web.AdminAuth;
+using CafeMenu.Web.AdminImageUpload;
+using CafeMenu.Web.Configuration;
+using CafeMenu.Web.PublicMenu;
+using CafeMenu.Shared.HealthChecks;
+using CafeMenu.Shared.HostFiltering;
+using CafeMenu.Shared.RateLimiting;
+using CafeMenu.Shared.ReverseProxy;
+using CafeMenu.Shared.SecurityHeaders;
+using Microsoft.Extensions.Options;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+builder.Services.AddRazorComponents()
+    .AddInteractiveServerComponents();
+builder.Services.AddApplicationDataProtection(builder.Configuration);
+builder.Services.AddOutboundHttpClientConfiguration(builder.Configuration);
+builder.Services.AddAdminAuthenticationInfrastructure(builder.Configuration, builder.Environment);
+builder.Services.AddApplicationHostFiltering();
+builder.Services.AddApplicationReverseProxy(builder.Configuration);
+builder.Services.AddApplicationRateLimiting(builder.Configuration);
+builder.Services.AddApplicationSecurityHeaders();
+builder.Services.AddApplicationHealthChecks();
+builder.Services.AddScoped<IAdminBrandingApiClient, AdminBrandingApiClient>();
+builder.Services.AddScoped<IAdminCafeApiClient, AdminCafeApiClient>();
+builder.Services.AddScoped<IAdminCafeSettingsApiClient, AdminCafeSettingsApiClient>();
+builder.Services.AddScoped<IAdminCategoryApiClient, AdminCategoryApiClient>();
+builder.Services.AddScoped<IAdminPlatformApiClient, AdminPlatformApiClient>();
+builder.Services.AddScoped<IAdminProductApiClient, AdminProductApiClient>();
+builder.Services.AddScoped<IAdminQrCodeRenderer, AdminQrCodeRenderer>();
+builder.Services.AddScoped<IAdminQrCodeService, AdminQrCodeService>();
+builder.Services.AddScoped<IAdminQrUrlBuilder, AdminQrUrlBuilder>();
+builder.Services.AddScoped<IAdminImageUploadApiClient, AdminImageUploadApiClient>();
+builder.Services.AddScoped<IAccountSetupApiClient, AccountSetupApiClient>();
+builder.Services.AddHttpClient(AccountSetupConstants.ApiClientName, (serviceProvider, httpClient) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<AdminApiOptions>>().Value;
+    httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+}).ConfigureOutboundHttpTimeout();
+builder.Services.AddOptions<PublicMenuQrOptions>()
+    .Bind(builder.Configuration.GetSection("PublicMenu"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<PublicMenuQrOptions>, AdminQrOptionsValidator>();
+builder.Services.AddOptions<PublicMenuApiOptions>()
+    .Bind(builder.Configuration.GetSection("PublicApi"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddSingleton<IValidateOptions<PublicMenuApiOptions>, PublicApiOptionsValidator>();
+builder.Services.AddHttpClient<IPublicMenuApiClient, PublicMenuApiClient>((serviceProvider, httpClient) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<PublicMenuApiOptions>>().Value;
+    httpClient.BaseAddress = new Uri(options.BaseUrl, UriKind.Absolute);
+}).ConfigureOutboundHttpTimeout();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+}
+
+app.UseConfiguredForwardedHeaders();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+}
+app.UseApplicationSecurityHeaders();
+app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseHttpsRedirection();
+
+app.UseAuthentication();
+app.UseRateLimiter();
+app.UseApplicationAccountSetupPostRateLimiting();
+app.UseAdminRouteAuthorizationRedirect();
+app.UseAuthorization();
+app.UseAntiforgery();
+
+app.MapStaticAssets();
+app.MapAdminAuthEndpoints();
+app.MapAdminImageUploadEndpoints();
+app.MapAdminQrEndpoints();
+app.MapApplicationHealthEndpoints();
+app.MapRazorComponents<App>()
+    .AddInteractiveServerRenderMode();
+
+app.Run();
+
+public partial class Program;

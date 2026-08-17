@@ -1,0 +1,136 @@
+@page "/c/{Slug}/products/{ProductId:long}"
+@layout PublicMenuLayout
+@attribute [StreamRendering]
+@using System.Globalization
+@inject IPublicMenuApiClient PublicMenuApiClient
+
+<PageTitle>@(_product?.ProductName ?? "Ürün")</PageTitle>
+
+@if (_status == PublicProductDetailPageStatus.Loading)
+{
+    <section class="public-product-state loading-state" aria-live="polite">
+        <div class="loading-mark"></div>
+        <p>Ürün yükleniyor...</p>
+    </section>
+}
+else if (_status == PublicProductDetailPageStatus.NotFound)
+{
+    <section class="public-product-state" data-state="not-found">
+        <h1>Ürün bulunamadı</h1>
+        <p>Bu ürün yayında olmayabilir veya bağlantı artık geçerli olmayabilir.</p>
+        <a href="@BackToMenuUrl">Menüye dön</a>
+    </section>
+}
+else if (_status == PublicProductDetailPageStatus.Failure)
+{
+    <section class="public-product-state" data-state="failure">
+        <h1>Ürün yüklenemedi</h1>
+        <p>Şu anda ürün bilgisine erişilemiyor. Lütfen daha sonra tekrar deneyin.</p>
+        <a href="@BackToMenuUrl">Menüye dön</a>
+    </section>
+}
+else if (_product is not null)
+{
+    var themeClass = PublicMenuThemeStyleBuilder.GetThemePresetClass(_product.Theme.ThemePreset);
+    var fontClass = PublicMenuThemeStyleBuilder.GetFontPresetClass(_product.Theme.FontPreset);
+
+    <main class="public-product @themeClass @fontClass" style="@PublicMenuThemeStyleBuilder.BuildStyle(_product.Theme)">
+        <header class="product-detail-hero">
+            @if (!string.IsNullOrWhiteSpace(_product.CoverImageUrl))
+            {
+                <img class="cover-image" src="@_product.CoverImageUrl" alt="" loading="eager" />
+            }
+            <div class="hero-content">
+                @if (!string.IsNullOrWhiteSpace(_product.LogoImageUrl))
+                {
+                    <img class="logo-image" src="@_product.LogoImageUrl" alt="@($"{_product.CafeName} logo")" />
+                }
+                <div>
+                    <a class="back-link" href="@BackToMenuUrl">Menüye dön</a>
+                    <p class="menu-label">@_product.CafeName</p>
+                    <h1>@_product.ProductName</h1>
+                    <p class="category-name">@_product.CategoryName</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="@GetDetailBodyClass(_product)">
+            @if (!string.IsNullOrWhiteSpace(_product.ImageUrl))
+            {
+                <img class="product-detail-image" src="@_product.ImageUrl" alt="@_product.ProductName" loading="eager" />
+            }
+            <div class="product-detail-content">
+                <div class="product-detail-heading">
+                    <span class="product-detail-price">@FormatPrice(_product.Price)</span>
+                    @if (!_product.IsAvailable)
+                    {
+                        <span class="availability">Tükendi</span>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_product.Description))
+                {
+                    <p>@_product.Description</p>
+                }
+                else
+                {
+                    <p>Bu ürün için açıklama eklenmemiş.</p>
+                }
+            </div>
+        </section>
+    </main>
+}
+
+@code {
+    private static readonly CultureInfo TurkishCulture = CultureInfo.GetCultureInfo("tr-TR");
+
+    private PublicProductDetailPageStatus _status = PublicProductDetailPageStatus.Loading;
+    private PublicProductDetailResponse? _product;
+
+    [Parameter]
+    public string Slug { get; set; } = string.Empty;
+
+    [Parameter]
+    public long ProductId { get; set; }
+
+    private string BackToMenuUrl => $"/c/{Uri.EscapeDataString(Slug.Trim().ToLowerInvariant())}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _status = PublicProductDetailPageStatus.Loading;
+        _product = null;
+
+        var result = await PublicMenuApiClient.GetProductDetailAsync(Slug, ProductId, CancellationToken.None);
+
+        if (result.Status == PublicMenuRequestStatus.Success && result.Product is not null)
+        {
+            _product = result.Product;
+            _status = PublicProductDetailPageStatus.Success;
+            return;
+        }
+
+        _status = result.Status == PublicMenuRequestStatus.NotFound
+            ? PublicProductDetailPageStatus.NotFound
+            : PublicProductDetailPageStatus.Failure;
+    }
+
+    private static string FormatPrice(decimal price)
+    {
+        return $"{price.ToString("N2", TurkishCulture)} ₺";
+    }
+
+    private static string GetDetailBodyClass(PublicProductDetailResponse product)
+    {
+        return string.IsNullOrWhiteSpace(product.ImageUrl)
+            ? "product-detail-body product-detail-body-no-image"
+            : "product-detail-body";
+    }
+
+    private enum PublicProductDetailPageStatus
+    {
+        Loading,
+        Success,
+        NotFound,
+        Failure
+    }
+}

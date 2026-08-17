@@ -1,0 +1,75 @@
+using CafeMenu.Api.DTOs.Responses;
+using CafeMenu.Api.Entities;
+using CafeMenu.Api.Repositories;
+using Riok.Mapperly.Abstractions;
+
+namespace CafeMenu.Api.Mappings;
+
+[Mapper]
+public partial class CafeMapper
+{
+    [MapperIgnoreSource(nameof(CafeEntity.LogoImageUrl))]
+    [MapperIgnoreSource(nameof(CafeEntity.CoverImageUrl))]
+    [MapperIgnoreSource(nameof(CafeEntity.IsDeleted))]
+    [MapperIgnoreSource(nameof(CafeEntity.DeletedAt))]
+    [MapperIgnoreSource(nameof(CafeEntity.Memberships))]
+    [MapperIgnoreSource(nameof(CafeEntity.Categories))]
+    [MapperIgnoreSource(nameof(CafeEntity.Products))]
+    [MapperIgnoreSource(nameof(CafeEntity.Theme))]
+    public partial CafeResponseDto ToResponse(CafeEntity cafe);
+
+    [MapperIgnoreSource(nameof(CafeEntity.CoverImageUrl))]
+    [MapperIgnoreSource(nameof(CafeEntity.CreatedAt))]
+    [MapperIgnoreSource(nameof(CafeEntity.UpdatedAt))]
+    [MapperIgnoreSource(nameof(CafeEntity.IsDeleted))]
+    [MapperIgnoreSource(nameof(CafeEntity.DeletedAt))]
+    [MapperIgnoreSource(nameof(CafeEntity.Memberships))]
+    [MapperIgnoreSource(nameof(CafeEntity.Categories))]
+    [MapperIgnoreSource(nameof(CafeEntity.Products))]
+    [MapperIgnoreSource(nameof(CafeEntity.Theme))]
+    public partial MyCafeResponseDto ToMyCafeResponse(CafeEntity cafe, IReadOnlyCollection<string> roleCodes);
+
+    [MapperIgnoreSource(nameof(CafeEntity.LogoImageUrl))]
+    [MapperIgnoreSource(nameof(CafeEntity.CoverImageUrl))]
+    [MapperIgnoreSource(nameof(CafeEntity.IsDeleted))]
+    [MapperIgnoreSource(nameof(CafeEntity.DeletedAt))]
+    [MapperIgnoreSource(nameof(CafeEntity.Memberships))]
+    [MapperIgnoreSource(nameof(CafeEntity.Categories))]
+    [MapperIgnoreSource(nameof(CafeEntity.Products))]
+    [MapperIgnoreSource(nameof(CafeEntity.Theme))]
+    private partial CafeDetailResponseDto ToDetailResponseInternal(
+        CafeEntity cafe,
+        IReadOnlyCollection<CafeMembershipResponseDto> memberships);
+
+    public CafeDetailResponseDto ToDetailResponse(CafeEntity cafe)
+    {
+        return ToDetailResponseInternal(cafe, cafe.Memberships.Select(ToMembershipResponse).ToArray());
+    }
+
+    private static CafeMembershipResponseDto ToMembershipResponse(CafeMembershipEntity membership)
+    {
+        return new CafeMembershipResponseDto(
+            membership.Id,
+            membership.CafeId,
+            membership.AppUserId,
+            membership.AppUser.Email,
+            membership.AppUser.FullName,
+            membership.Role.Code,
+            membership.IsActive);
+    }
+
+    public CafeMemberResponseDto ToMemberResponse(CafeMembershipEntity membership)
+    {
+        return new CafeMemberResponseDto(
+            membership.Id,
+            membership.AppUserId,
+            membership.AppUser.Email,
+            membership.AppUser.FullName,
+            membership.Role.Code,
+            membership.IsActive);
+    }
+
+    public partial CafeDashboardStatsResponseDto ToDashboardStatsResponse(CafeDashboardStatsProjection stats);
+
+    public partial PlatformDashboardStatsResponseDto ToPlatformDashboardStatsResponse(PlatformDashboardStatsProjection stats);
+}
